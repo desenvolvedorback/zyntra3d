@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/Header';
 
 export const metadata: Metadata = {
   title: 'Doce Sabor',
-  description: 'Uma boutique de doces, entregue via link.',
+  description: 'Uma loja especializada em doces deliciosas para todos os gostos.',
 };
 
 export default function RootLayout({

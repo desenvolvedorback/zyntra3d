@@ -20,7 +20,8 @@ async function getFeaturedProducts() {
         return { 
             id: doc.id,
             ...data,
-        } as Omit<Product, 'createdAt'> & { createdAt: any }
+            createdAt: data.createdAt.toDate(),
+        } as Product;
     });
   } catch (error) {
     console.error("Error fetching featured products:", error);
@@ -75,7 +76,7 @@ export default async function HomePage() {
               Doçura, a um Link de Distância
             </h1>
             <p className="mt-4 max-w-2xl text-lg md:text-xl drop-shadow-md font-alegreya">
-              Bem-vindo à Doce Sabor, sua conexão direta com doces artesanais. Compartilhe um link, compartilhe o amor.
+              Uma loja especializada em doces deliciosas para todos os gostos.
             </p>
             <Button asChild size="lg" className="mt-8 bg-primary text-primary-foreground hover:bg-primary/90">
               <Link href="/products">Explore Nossos Doces</Link>
