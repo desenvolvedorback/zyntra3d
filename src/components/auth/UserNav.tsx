@@ -19,17 +19,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "../ui/skeleton";
 import { LayoutDashboard, LogOut, User as UserIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function UserNav() {
   const { user, userProfile, isAdmin, loading } = useAuth();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut(auth);
     router.push("/");
   };
 
-  if (loading) {
+  if (!isClient || loading) {
     return <Skeleton className="h-10 w-10 rounded-full" />;
   }
 
