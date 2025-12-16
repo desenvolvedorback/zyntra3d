@@ -64,7 +64,7 @@ export default async function HomePage() {
             src={heroImage.imageUrl}
             alt={heroImage.description}
             fill
-            className="object-cover -z-10"
+            className="object-cover -z-10 animate-subtle-rotate"
             priority
             data-ai-hint={heroImage.imageHint}
           />
@@ -73,7 +73,7 @@ export default async function HomePage() {
         <div className="container relative mx-auto flex flex-col items-center justify-center h-full text-center text-primary-foreground">
           <div className="bg-black/30 backdrop-blur-sm p-8 rounded-lg">
             <h1 className="font-headline text-5xl md:text-7xl lg:text-8xl drop-shadow-lg">
-              Doçura, a um Link de Distância
+              Doce Sabor
             </h1>
             <p className="mt-4 max-w-2xl text-lg md:text-xl drop-shadow-md font-alegreya">
               Uma loja especializada em doces deliciosas para todos os gostos.
@@ -107,7 +107,7 @@ export default async function HomePage() {
                     </Link>
                   </CardHeader>
                   <CardContent className="p-6 flex flex-col flex-grow">
-                    <CardTitle className="font-headline text-2xl text-primary">{product.name}</CardTitle>
+                    <CardTitle className="font-headline text-2xl text-primary h-16">{product.name}</CardTitle>
                     <p className="text-muted-foreground mt-2 text-lg font-bold">R${product.price.toFixed(2)}</p>
                     <div className="mt-auto pt-4">
                        <AddToCartButton 
