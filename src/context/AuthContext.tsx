@@ -22,25 +22,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        const userDocRef = doc(db, "users", user.uid);
+    const fetchUserProfile = async (user: User) => {
+      const userDocRef = doc(db, "users", user.uid);
+      try {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           const profile = userDoc.data() as UserProfile;
           setUserProfile(profile);
           setIsAdmin(profile.role === 'admin');
         } else {
-          // Handle case where user exists in Auth but not in Firestore
           setUserProfile(null);
           setIsAdmin(false);
         }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+        setUserProfile(null);
+        setIsAdmin(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setUser(user);
+      if (user) {
+        setLoading(true);
+        await fetchUserProfile(user);
       } else {
         setUserProfile(null);
         setIsAdmin(false);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -55,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }
