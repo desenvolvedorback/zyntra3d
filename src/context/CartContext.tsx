@@ -15,6 +15,11 @@ interface CartContextType {
   cartCount: number;
   totalPrice: number;
   loading: boolean;
+  delivery: boolean;
+  setDelivery: React.Dispatch<React.SetStateAction<boolean>>;
+  location: string;
+  setLocation: React.Dispatch<React.SetStateAction<string>>;
+  deliveryFee: number;
 }
 
 export const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -25,6 +30,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
+  const [delivery, setDelivery] = useState(false);
+  const [location, setLocation] = useState("");
+  const deliveryFee = 10;
 
   const getLocalCart = useCallback((): CartItem[] => {
     if (typeof window === 'undefined') return [];
@@ -157,11 +165,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       await removeFromCart(productId);
       return;
     }
+
+    const productDoc = await getDoc(doc(db, "products", productId));
+    const productStock = productDoc.data()?.stock ?? 0;
+    const newQuantity = quantity > productStock ? productStock : quantity;
+
     if (user) {
-      await setDoc(doc(db, "carts", user.uid, "items", productId), { quantity }, { merge: true });
+      await setDoc(doc(db, "carts", user.uid, "items", productId), { quantity: newQuantity }, { merge: true });
     } else {
       const updatedCart = cartItems.map(item =>
-        item.productId === productId ? { ...item, quantity } : item
+        item.productId === productId ? { ...item, quantity: newQuantity } : item
       );
       setCartItems(updatedCart);
       setLocalCart(updatedCart);
@@ -181,6 +194,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCartItems([]);
       setLocalCart([]);
     }
+    setDelivery(false);
+    setLocation("");
   };
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -195,6 +210,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     cartCount,
     totalPrice,
     loading,
+    delivery,
+    setDelivery,
+    location,
+    setLocation,
+    deliveryFee,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -11,22 +11,49 @@ import {
   SheetClose
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, ShoppingCart, Trash2 } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export function CartSheet() {
-  const { cartItems, cartCount, totalPrice, clearCart, loading } = useCart();
+  const { 
+    cartItems, 
+    cartCount, 
+    totalPrice, 
+    clearCart, 
+    loading,
+    delivery,
+    setDelivery,
+    location,
+    setLocation,
+    deliveryFee,
+  } = useCart();
   const [isClient, setIsClient] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  const finalPrice = delivery ? totalPrice + deliveryFee : totalPrice;
+
   const handleCheckout = () => {
+    if (delivery && !location.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Endereço Necessário",
+        description: "Por favor, insira o seu endereço para a entrega.",
+      });
+      return;
+    }
+
     const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
     if (!number) {
       alert("O número do WhatsApp não está configurado.");
@@ -37,23 +64,41 @@ export function CartSheet() {
       `${item.name} (x${item.quantity}) - R$${(item.price * item.quantity).toFixed(2)}`
     ).join("\n");
 
+    let deliveryInfo = "";
+    if (delivery) {
+      deliveryInfo = `\n\n---
+Taxa de Entrega: R$${deliveryFee.toFixed(2)}
+Endereço: ${location}
+---`;
+    }
+
     const message = encodeURIComponent(
 `Olá! Gostaria de fazer um pedido:
 ---
 ${messageItems}
 ---
-Total: R$${totalPrice.toFixed(2)}`
+Subtotal: R$${totalPrice.toFixed(2)}${deliveryInfo}
+Total: R$${finalPrice.toFixed(2)}`
     );
 
     window.open(`https://wa.me/${number}?text=${message}`, "_blank");
   };
+
+  if (!isClient) {
+    return (
+      <Button variant="ghost" size="icon" className="relative">
+        <ShoppingCart className="h-5 w-5" />
+        <span className="sr-only">Carrinho de Compras</span>
+      </Button>
+    );
+  }
 
   return (
     <Sheet>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
-          {isClient && cartCount > 0 && (
+          {cartCount > 0 && (
             <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
               {cartCount}
             </span>
@@ -70,7 +115,7 @@ Total: R$${totalPrice.toFixed(2)}`
         </SheetHeader>
         <Separator className="my-4" />
 
-        {!isClient || loading ? (
+        {loading ? (
             <div className="flex flex-1 items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -86,10 +131,50 @@ Total: R$${totalPrice.toFixed(2)}`
             <SheetFooter className="mt-auto">
               <div className="w-full space-y-4">
                 <Separator />
-                <div className="flex justify-between items-center font-bold text-lg">
-                  <span>Total</span>
-                  <span>R$${totalPrice.toFixed(2)}</span>
-                </div>
+                 <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="delivery-switch" className="flex flex-col gap-1">
+                      <span>Adicionar entrega</span>
+                      <span className="font-normal text-muted-foreground text-xs">Taxa de R$ {deliveryFee.toFixed(2)}</span>
+                    </Label>
+                    <Switch
+                      id="delivery-switch"
+                      checked={delivery}
+                      onCheckedChange={setDelivery}
+                    />
+                  </div>
+
+                  {delivery && (
+                    <div className="space-y-2">
+                       <Label htmlFor="location">Seu Endereço</Label>
+                       <Input 
+                         id="location" 
+                         placeholder="Rua, Número, Bairro, etc."
+                         value={location}
+                         onChange={(e) => setLocation(e.target.value)}
+                       />
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span>R$ {totalPrice.toFixed(2)}</span>
+                  </div>
+
+                  {delivery && (
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                       <span>Taxa de Entrega</span>
+                       <span>R$ {deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center font-bold text-lg">
+                    <span>Total</span>
+                    <span>R$ {finalPrice.toFixed(2)}</span>
+                  </div>
+                 </div>
                 <Button className="w-full" size="lg" onClick={handleCheckout}>
                   Finalizar via WhatsApp
                 </Button>
