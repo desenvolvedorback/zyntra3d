@@ -5,7 +5,7 @@ import { Logo } from "@/components/shared/Logo";
 import { UserNav } from "@/components/auth/UserNav";
 import { CartSheet } from "@/components/cart/CartSheet";
 import { useAuth } from "@/hooks/useAuth";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 
@@ -30,6 +30,9 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-full max-w-xs pr-6">
+                <SheetHeader>
+                    <SheetTitle className="sr-only">Menu Principal</SheetTitle>
+                </SheetHeader>
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between border-b pb-4">
                   <Logo />
