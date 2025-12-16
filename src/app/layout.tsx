@@ -2,8 +2,8 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { Toaster } from "@/components/ui/toaster"
-import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { Header } from '@/components/layout/Header';
 
 export const metadata: Metadata = {
   title: 'DoceLink',

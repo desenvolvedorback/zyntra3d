@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
 import { collection, getDocs, limit, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { News, Product } from "@/lib/types";
