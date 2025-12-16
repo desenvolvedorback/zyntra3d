@@ -22,37 +22,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const fetchUserProfile = async (user: User) => {
-      const userDocRef = doc(db, "users", user.uid);
-      try {
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          const profile = userDoc.data() as UserProfile;
-          setUserProfile(profile);
-          setIsAdmin(profile.role === 'admin');
-        } else {
-          setUserProfile(null);
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-        setUserProfile(null);
-        setIsAdmin(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        setLoading(true);
-        await fetchUserProfile(user);
+        // User is logged in, now fetch profile
+        const userDocRef = doc(db, "users", user.uid);
+        try {
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            const profile = userDoc.data() as UserProfile;
+            setUserProfile(profile);
+            setIsAdmin(profile.role === 'admin');
+          } else {
+            // This case might happen if user exists in auth but not in firestore
+            setUserProfile(null);
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+          setUserProfile(null);
+          setIsAdmin(false);
+        }
       } else {
+        // User is not logged in
         setUserProfile(null);
         setIsAdmin(false);
-        setLoading(false);
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
