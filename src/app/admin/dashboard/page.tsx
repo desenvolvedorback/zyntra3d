@@ -3,6 +3,8 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { Newspaper, Package } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 async function getStats() {
   try {
     const productsSnapshot = await getDocs(collection(db, "products"));

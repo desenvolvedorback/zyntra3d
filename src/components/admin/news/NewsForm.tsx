@@ -23,6 +23,8 @@ interface NewsFormProps {
   initialData?: News;
 }
 
+const DEFAULT_IMAGE_URL = "https://files.catbox.moe/9m67rz.png";
+
 export function NewsForm({ initialData }: NewsFormProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -41,11 +43,16 @@ export function NewsForm({ initialData }: NewsFormProps) {
   const onSubmit = async (data: NewsFormValues) => {
     setLoading(true);
     try {
+      const payload = { ...data };
+      if (!payload.imageUrl) {
+        payload.imageUrl = DEFAULT_IMAGE_URL;
+      }
+
       if (initialData) {
-        await updateNewsArticle(initialData.id, data);
+        await updateNewsArticle(initialData.id, payload);
         toast({ title: "Sucesso", description: "Notícia atualizada." });
       } else {
-        await addNewsArticle(data);
+        await addNewsArticle(payload);
         toast({ title: "Sucesso", description: "Notícia criada." });
       }
       router.push("/admin/news");
@@ -102,7 +109,7 @@ export function NewsForm({ initialData }: NewsFormProps) {
                 <FormItem>
                   <FormLabel>URL da Imagem</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://picsum.photos/seed/..." {...field} disabled={loading} />
+                    <Input placeholder={DEFAULT_IMAGE_URL} {...field} disabled={loading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

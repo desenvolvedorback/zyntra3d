@@ -25,6 +25,8 @@ interface ProductFormProps {
   initialData?: Product;
 }
 
+const DEFAULT_IMAGE_URL = "https://files.catbox.moe/9m67rz.png";
+
 export function ProductForm({ initialData }: ProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -81,11 +83,16 @@ export function ProductForm({ initialData }: ProductFormProps) {
   const onSubmit = async (data: ProductFormValues) => {
     setLoading(true);
     try {
+      const payload = { ...data };
+      if (!payload.imageUrl) {
+        payload.imageUrl = DEFAULT_IMAGE_URL;
+      }
+
       if (initialData) {
-        await updateProduct(initialData.id, data);
+        await updateProduct(initialData.id, payload);
         toast({ title: "Sucesso", description: "Produto atualizado." });
       } else {
-        await addProduct(data);
+        await addProduct(payload);
         toast({ title: "Sucesso", description: "Produto criado." });
       }
       router.push("/admin/products");
@@ -159,7 +166,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     <FormItem>
                       <FormLabel>URL da Imagem</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://picsum.photos/seed/..." {...field} disabled={loading} />
+                        <Input placeholder={DEFAULT_IMAGE_URL} {...field} disabled={loading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
