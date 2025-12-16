@@ -4,6 +4,7 @@ import { Providers } from '@/components/providers';
 import { Toaster } from "@/components/ui/toaster"
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
+import { CookieConsent } from '@/components/shared/CookieConsent';
 
 export const metadata: Metadata = {
   title: 'Doce Sabor',
@@ -30,6 +31,7 @@ export default function RootLayout({
             <Footer />
           </div>
           <Toaster />
+          <CookieConsent />
         </Providers>
       </body>
     </html>

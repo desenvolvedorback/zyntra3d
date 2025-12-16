@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { Newspaper, Package } from "lucide-react";
+import { AdminWelcome } from "@/components/admin/AdminWelcome";
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,7 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Bem-vindo, Admin!</CardTitle>
+            <AdminWelcome />
             <CardDescription>
               Este é o seu centro de controle para a Doce Sabor.
             </CardDescription>

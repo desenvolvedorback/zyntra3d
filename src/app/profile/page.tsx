@@ -57,11 +57,7 @@ export default function ProfilePage() {
             <div className="space-y-4">
                 <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <span className="text-muted-foreground">Função</span>
-                    <span className="font-semibold capitalize">{userProfile.role}</span>
-                </div>
-                 <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                    <span className="text-muted-foreground">UID do Usuário</span>
-                    <span className="font-mono text-sm">{userProfile.uid}</span>
+                    <span className="font-semibold capitalize">{userProfile.role.trim()}</span>
                 </div>
             </div>
         </CardContent>
