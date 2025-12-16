@@ -5,25 +5,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient && !loading && !user) {
       router.push("/login");
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isClient]);
 
-  const userInitials = userProfile?.displayName?.split(' ').map(n => n[0]).join('') || userProfile?.email?.charAt(0).toUpperCase() || 'U';
-
-  if (loading || !user || !userProfile) {
+  if (!isClient || loading || !user || !userProfile) {
     return (
       <div className="container mx-auto py-12 md:py-20">
         <Card className="max-w-2xl mx-auto">
-          <CardHeader className="text-center">
+          <CardHeader className="items-center text-center">
              <Skeleton className="h-24 w-24 rounded-full mx-auto" />
              <Skeleton className="h-8 w-48 mt-4 mx-auto" />
              <Skeleton className="h-4 w-64 mt-2 mx-auto" />
@@ -36,6 +39,8 @@ export default function ProfilePage() {
       </div>
     );
   }
+  
+  const userInitials = userProfile.displayName?.split(' ').map(n => n[0]).join('') || userProfile.email?.charAt(0).toUpperCase() || 'U';
 
   return (
     <div className="container mx-auto py-12 md:py-20">
