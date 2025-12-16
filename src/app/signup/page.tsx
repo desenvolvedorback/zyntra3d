@@ -15,6 +15,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/shared/Logo";
 import { Loader2 } from "lucide-react";
 
+declare global {
+  interface Window {
+    grecaptcha: any;
+  }
+}
+
 export default function SignupPage() {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -26,35 +32,57 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
 
-      await updateProfile(user, { displayName });
-
-      // Create user profile in Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        email: user.email,
-        displayName: displayName,
-        role: 'customer', // Default role
-      });
-
-      toast({
-        title: "Conta Criada!",
-        description: "Bem-vindo à Doce Sabor!",
-      });
-      router.push("/");
-    } catch (error: any) {
-      console.error("Signup error:", error);
+    if (typeof window.grecaptcha === "undefined") {
       toast({
         variant: "destructive",
-        title: "Falha no Cadastro",
-        description: error.message || "Ocorreu um erro desconhecido.",
+        title: "Falha na verificação",
+        description: "O reCAPTCHA não carregou. Por favor, recarregue a página.",
       });
-    } finally {
       setLoading(false);
+      return;
     }
+    
+    window.grecaptcha.enterprise.ready(async () => {
+      try {
+        const token = await window.grecaptcha.enterprise.execute('6Lc5eC0sAAAAAF1tCihMIO3M1cvhoZX3Tek3OPcQ', {action: 'SIGNUP'});
+        
+        // Note: For full security, this token should be verified on a backend server.
+        // As this is a frontend-only action for now, we proceed after getting the token.
+        if (!token) {
+          throw new Error("Verificação reCAPTCHA falhou.");
+        }
+
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        await updateProfile(user, { displayName });
+
+        // Create user profile in Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          email: user.email,
+          displayName: displayName,
+          role: 'customer', // Default role
+        });
+
+        toast({
+          title: "Conta Criada!",
+          description: "Bem-vindo à Doce Sabor!",
+        });
+        router.push("/");
+
+      } catch (error: any) {
+        console.error("Signup error:", error);
+        toast({
+          variant: "destructive",
+          title: "Falha no Cadastro",
+          description: error.message || "Ocorreu um erro desconhecido.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   return (
