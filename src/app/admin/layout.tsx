@@ -8,9 +8,11 @@ function AdminHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 max-w-7xl items-center">
-        <Logo />
-        <p className="font-headline text-lg text-primary/80 ml-2 hidden sm:block">Admin</p>
-        <nav className="hidden md:flex md:items-center md:space-x-6 md:ml-10 text-sm font-medium">
+        <div className="mr-4 hidden md:flex">
+          <Logo />
+          <p className="font-headline text-lg text-primary/80 ml-2">Admin</p>
+        </div>
+        <nav className="flex items-center space-x-6 text-sm font-medium">
           <Link href="/admin/dashboard" className="transition-colors hover:text-foreground/80 text-foreground/60">
             Painel
           </Link>
