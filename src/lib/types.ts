@@ -1,4 +1,3 @@
-import type { Timestamp } from "firebase/firestore";
 
 export interface Product {
   id: string;
@@ -8,7 +7,7 @@ export interface Product {
   imageUrl: string;
   imageHint: string;
   stock: number;
-  createdAt: Timestamp;
+  createdAt: Date;
 }
 
 export interface News {
@@ -17,7 +16,7 @@ export interface News {
   content: string;
   imageUrl: string;
   imageHint: string;
-  createdAt: Timestamp;
+  createdAt: Date;
 }
 
 export interface CartItem {

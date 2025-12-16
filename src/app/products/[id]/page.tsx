@@ -14,6 +14,7 @@ async function getProduct(id: string): Promise<Product | null> {
       return { 
         id: docSnap.id,
         ...data,
+        createdAt: data.createdAt.toDate(),
       } as Product;
     }
     return null;

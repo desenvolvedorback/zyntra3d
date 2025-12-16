@@ -11,7 +11,14 @@ async function getProducts(): Promise<Product[]> {
     const productsCollection = collection(db, "products");
     const q = query(productsCollection, orderBy("createdAt", "desc"));
     const productSnapshot = await getDocs(q);
-    return productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    return productSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt.toDate(),
+        } as Product;
+    });
   } catch (error) {
     console.error("Error fetching products:", error);
     return [];

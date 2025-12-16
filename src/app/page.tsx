@@ -15,7 +15,14 @@ async function getFeaturedProducts() {
     const q = query(productsCollection, orderBy("createdAt", "desc"), limit(4));
     const productSnapshot = await getDocs(q);
     if (productSnapshot.empty) return [];
-    return productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    return productSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt.toDate()
+        } as Product
+    });
   } catch (error) {
     console.error("Error fetching featured products:", error);
     return [];
