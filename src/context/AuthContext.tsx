@@ -23,18 +23,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(true);
       setUser(user);
       if (user) {
-        // User is logged in, now fetch profile
         const userDocRef = doc(db, "users", user.uid);
         try {
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
             const profile = userDoc.data() as UserProfile;
             setUserProfile(profile);
-            setIsAdmin(profile.role === 'admin');
+            // Corrige a verificação para ignorar espaços em branco
+            setIsAdmin(profile.role.trim() === 'admin');
           } else {
-            // This case might happen if user exists in auth but not in firestore
             setUserProfile(null);
             setIsAdmin(false);
           }
@@ -44,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsAdmin(false);
         }
       } else {
-        // User is not logged in
         setUserProfile(null);
         setIsAdmin(false);
       }
