@@ -16,9 +16,15 @@ import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useState, useEffect } from "react";
 
 export function CartSheet() {
   const { cartItems, cartCount, totalPrice, clearCart, loading } = useCart();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleCheckout = () => {
     const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
@@ -47,7 +53,7 @@ Total: R$${totalPrice.toFixed(2)}`
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
-          {cartCount > 0 && (
+          {isClient && cartCount > 0 && (
             <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
               {cartCount}
             </span>
@@ -64,7 +70,7 @@ Total: R$${totalPrice.toFixed(2)}`
         </SheetHeader>
         <Separator className="my-4" />
 
-        {loading ? (
+        {!isClient || loading ? (
             <div className="flex flex-1 items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
