@@ -18,7 +18,7 @@ const GenerateProductDescriptionInputSchema = z.object({
 export type GenerateProductDescriptionInput = z.infer<typeof GenerateProductDescriptionInputSchema>;
 
 const GenerateProductDescriptionOutputSchema = z.object({
-  description: z.string().describe('A compelling and descriptive product description.'),
+  description: z.string().describe('A compelling and descriptive product description, in Brazilian Portuguese.'),
 });
 export type GenerateProductDescriptionOutput = z.infer<typeof GenerateProductDescriptionOutputSchema>;
 
@@ -32,12 +32,12 @@ const prompt = ai.definePrompt({
   name: 'generateProductDescriptionPrompt',
   input: {schema: GenerateProductDescriptionInputSchema},
   output: {schema: GenerateProductDescriptionOutputSchema},
-  prompt: `You are an expert copywriter specializing in writing compelling product descriptions.
+  prompt: `Você é um copywriter especialista em e-commerce, especializado em escrever descrições de produtos atraentes para uma loja de doces chamada "Doce Sabor".
 
-  Generate a product description based on the following title and keywords.
+  Gere uma descrição de produto em português do Brasil com base no seguinte título e palavras-chave. A descrição deve ser convidativa, detalhada e despertar o desejo do cliente de comprar o doce.
 
-  Title: {{{title}}}
-  Keywords: {{{keywords}}}
+  Título: {{{title}}}
+  Palavras-chave: {{{keywords}}}
   `,
 });
 
