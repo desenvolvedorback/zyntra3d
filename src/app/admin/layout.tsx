@@ -12,18 +12,18 @@ function AdminHeader() {
         <p className="font-headline text-lg text-primary/80 ml-2 hidden sm:block">Admin</p>
         <nav className="hidden md:flex md:items-center md:space-x-6 md:ml-10 text-sm font-medium">
           <Link href="/admin/dashboard" className="transition-colors hover:text-foreground/80 text-foreground/60">
-            Dashboard
+            Painel
           </Link>
           <Link href="/admin/products" className="transition-colors hover:text-foreground/80 text-foreground/60">
-            Products
+            Produtos
           </Link>
           <Link href="/admin/news" className="transition-colors hover:text-foreground/80 text-foreground/60">
-            News
+            Notícias
           </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-4">
           <Button variant="outline" asChild>
-            <Link href="/" target="_blank">View Site</Link>
+            <Link href="/" target="_blank">Ver Site</Link>
           </Button>
           <UserNav />
         </div>

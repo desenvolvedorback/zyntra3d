@@ -41,16 +41,16 @@ export default function SignupPage() {
       });
 
       toast({
-        title: "Account Created!",
-        description: "Welcome to DoceLink!",
+        title: "Conta Criada!",
+        description: "Bem-vindo à Doce Sabor!",
       });
       router.push("/");
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({
         variant: "destructive",
-        title: "Signup Failed",
-        description: error.message || "An unknown error occurred.",
+        title: "Falha no Cadastro",
+        description: error.message || "Ocorreu um erro desconhecido.",
       });
     } finally {
       setLoading(false);
@@ -62,17 +62,17 @@ export default function SignupPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <Logo className="mx-auto mb-4" />
-          <CardTitle className="text-2xl font-headline text-primary">Create an Account</CardTitle>
-          <CardDescription>Join us and taste the sweetness.</CardDescription>
+          <CardTitle className="text-2xl font-headline text-primary">Criar uma Conta</CardTitle>
+          <CardDescription>Junte-se a nós e prove a doçura.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="displayName">Full Name</Label>
+              <Label htmlFor="displayName">Nome Completo</Label>
               <Input
                 id="displayName"
                 type="text"
-                placeholder="Your Name"
+                placeholder="Seu Nome"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 required
@@ -84,7 +84,7 @@ export default function SignupPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="voce@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -92,7 +92,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
                 type="password"
@@ -104,15 +104,15 @@ export default function SignupPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" /> : "Sign Up"}
+              {loading ? <Loader2 className="animate-spin" /> : "Cadastrar"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
+            Já tem uma conta?{" "}
             <Button variant="link" asChild className="p-0">
-              <Link href="/login">Log in</Link>
+              <Link href="/login">Entrar</Link>
             </Button>
           </p>
         </CardFooter>

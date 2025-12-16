@@ -27,7 +27,7 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
   const product = await getProduct(params.id);
 
   if (!product) {
-    return <div className="container py-12">Product not found.</div>;
+    return <div className="container py-12">Produto não encontrado.</div>;
   }
 
   return (
@@ -44,16 +44,16 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
         </div>
         <div className="flex flex-col justify-center">
           <h1 className="text-4xl font-headline text-primary">{product.name}</h1>
-          <p className="text-2xl font-bold text-muted-foreground mt-2">${product.price.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-muted-foreground mt-2">R${product.price.toFixed(2)}</p>
           <p className="mt-6 text-foreground/80 leading-relaxed font-alegreya text-lg">{product.description}</p>
           <div className="mt-8">
             <AddToCartButton product={product} />
           </div>
           {product.stock <= 5 && product.stock > 0 && (
-             <p className="text-destructive text-sm mt-4">Only {product.stock} left in stock!</p>
+             <p className="text-destructive text-sm mt-4">Apenas {product.stock} em estoque!</p>
           )}
            {product.stock === 0 && (
-             <p className="text-destructive text-sm mt-4">Out of stock</p>
+             <p className="text-destructive text-sm mt-4">Fora de estoque</p>
           )}
         </div>
       </div>

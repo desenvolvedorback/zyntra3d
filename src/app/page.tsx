@@ -66,13 +66,13 @@ export default async function HomePage() {
         <div className="container relative mx-auto flex flex-col items-center justify-center h-full text-center text-primary-foreground">
           <div className="bg-black/30 backdrop-blur-sm p-8 rounded-lg">
             <h1 className="font-headline text-5xl md:text-7xl lg:text-8xl drop-shadow-lg">
-              Sweetness, Just a Link Away
+              Doçura, a um Link de Distância
             </h1>
             <p className="mt-4 max-w-2xl text-lg md:text-xl drop-shadow-md font-alegreya">
-              Welcome to DoceLink, your direct connection to artisanal sweets. Share a link, share the love.
+              Bem-vindo à Doce Sabor, sua conexão direta com doces artesanais. Compartilhe um link, compartilhe o amor.
             </p>
             <Button asChild size="lg" className="mt-8 bg-primary text-primary-foreground hover:bg-primary/90">
-              <Link href="/products">Explore Our Sweets</Link>
+              <Link href="/products">Explore Nossos Doces</Link>
             </Button>
           </div>
         </div>
@@ -82,7 +82,7 @@ export default async function HomePage() {
       <section className="py-16 md:py-24">
         <div className="container mx-auto">
           <h2 className="text-3xl md:text-4xl font-headline text-center text-primary mb-12">
-            Our Signature Creations
+            Nossas Criações Exclusivas
           </h2>
           {featuredProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -101,7 +101,7 @@ export default async function HomePage() {
                   </CardHeader>
                   <CardContent className="p-6 flex flex-col flex-grow">
                     <CardTitle className="font-headline text-2xl text-primary">{product.name}</CardTitle>
-                    <p className="text-muted-foreground mt-2 text-lg font-bold">${product.price.toFixed(2)}</p>
+                    <p className="text-muted-foreground mt-2 text-lg font-bold">R${product.price.toFixed(2)}</p>
                     <div className="mt-auto pt-4">
                        <AddToCartButton product={product} />
                     </div>
@@ -110,7 +110,7 @@ export default async function HomePage() {
               ))}
             </div>
           ) : (
-            <p className="text-center text-muted-foreground">Our creations will be available soon. Stay tuned!</p>
+            <p className="text-center text-muted-foreground">Nossas criações estarão disponíveis em breve. Fique atento!</p>
           )}
         </div>
       </section>
@@ -119,7 +119,7 @@ export default async function HomePage() {
       <section className="bg-muted py-16 md:py-24">
         <div className="container mx-auto">
           <h2 className="text-3xl md:text-4xl font-headline text-center text-primary mb-12">
-            Latest News
+            Últimas Notícias
           </h2>
           {latestNews.length > 0 ? (
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -137,7 +137,7 @@ export default async function HomePage() {
                        </div>
                      </CardHeader>
                      <CardContent className="p-6">
-                       <p className="text-sm text-muted-foreground">{format(article.createdAt as Date, 'MMMM d, yyyy')}</p>
+                       <p className="text-sm text-muted-foreground">{format(article.createdAt as Date, 'd \'de\' MMMM, yyyy')}</p>
                        <CardTitle className="font-headline text-xl text-primary mt-2">{article.title}</CardTitle>
                        <p className="mt-2 text-muted-foreground line-clamp-3">{article.content}</p>
                      </CardContent>
@@ -146,7 +146,7 @@ export default async function HomePage() {
              </div>
           ) : (
             <p className="text-center text-muted-foreground">
-              Stay tuned for our latest creations and stories.
+              Fique atento às nossas últimas criações e histórias.
             </p>
           )}
         </div>

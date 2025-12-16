@@ -22,12 +22,12 @@ export default async function EditProductPage({ params }: { params: { id: string
   const product = await getProduct(params.id);
 
   if (!product) {
-    return <div>Product not found.</div>;
+    return <div>Produto não encontrado.</div>;
   }
 
   return (
     <div>
-      <h1 className="text-3xl font-headline mb-6 text-primary">Edit Product</h1>
+      <h1 className="text-3xl font-headline mb-6 text-primary">Editar Produto</h1>
       <ProductForm initialData={product} />
     </div>
   );

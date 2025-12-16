@@ -23,20 +23,20 @@ export function CartSheet() {
   const handleCheckout = () => {
     const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
     if (!number) {
-      alert("WhatsApp number is not configured.");
+      alert("O número do WhatsApp não está configurado.");
       return;
     }
     
     const messageItems = cartItems.map(item => 
-      `${item.name} (x${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}`
+      `${item.name} (x${item.quantity}) - R$${(item.price * item.quantity).toFixed(2)}`
     ).join("\n");
 
     const message = encodeURIComponent(
-`Hello! I'd like to place an order:
+`Olá! Gostaria de fazer um pedido:
 ---
 ${messageItems}
 ---
-Total: $${totalPrice.toFixed(2)}`
+Total: R$${totalPrice.toFixed(2)}`
     );
 
     window.open(`https://wa.me/${number}?text=${message}`, "_blank");
@@ -52,14 +52,14 @@ Total: $${totalPrice.toFixed(2)}`
               {cartCount}
             </span>
           )}
-          <span className="sr-only">Shopping Cart</span>
+          <span className="sr-only">Carrinho de Compras</span>
         </Button>
       </SheetTrigger>
       <SheetContent className="flex flex-col">
         <SheetHeader>
-          <SheetTitle>Your Cart</SheetTitle>
+          <SheetTitle>Seu Carrinho</SheetTitle>
           <SheetDescription>
-            Review your items and proceed to checkout.
+            Revise seus itens e finalize a compra.
           </SheetDescription>
         </SheetHeader>
         <Separator className="my-4" />
@@ -82,13 +82,13 @@ Total: $${totalPrice.toFixed(2)}`
                 <Separator />
                 <div className="flex justify-between items-center font-bold text-lg">
                   <span>Total</span>
-                  <span>${totalPrice.toFixed(2)}</span>
+                  <span>R$${totalPrice.toFixed(2)}</span>
                 </div>
                 <Button className="w-full" size="lg" onClick={handleCheckout}>
-                  Checkout via WhatsApp
+                  Finalizar via WhatsApp
                 </Button>
                 <Button variant="outline" className="w-full" onClick={clearCart}>
-                    <Trash2 className="mr-2 h-4 w-4" /> Clear Cart
+                    <Trash2 className="mr-2 h-4 w-4" /> Limpar Carrinho
                 </Button>
               </div>
             </SheetFooter>
@@ -96,13 +96,13 @@ Total: $${totalPrice.toFixed(2)}`
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <ShoppingCart className="h-16 w-16 text-muted-foreground" />
-            <p className="mt-4 text-lg font-semibold">Your cart is empty</p>
+            <p className="mt-4 text-lg font-semibold">Seu carrinho está vazio</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Add some sweets to get started!
+              Adicione alguns doces para começar!
             </p>
             <SheetClose asChild>
                 <Button asChild className="mt-6">
-                    <a href="/products">Explore Sweets</a>
+                    <a href="/products">Explorar Doces</a>
                 </Button>
             </SheetClose>
           </div>

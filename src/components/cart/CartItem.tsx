@@ -28,10 +28,10 @@ export function CartItem({ item }: CartItemProps) {
       </div>
       <div className="flex-grow">
         <h4 className="font-semibold text-primary">{item.name}</h4>
-        <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
+        <p className="text-sm text-muted-foreground">R${item.price.toFixed(2)}</p>
         <div className="mt-2 flex items-center gap-2">
           <label htmlFor={`quantity-${item.productId}`} className="sr-only">
-            Quantity
+            Quantidade
           </label>
           <Input
             id={`quantity-${item.productId}`}
@@ -44,7 +44,7 @@ export function CartItem({ item }: CartItemProps) {
         </div>
       </div>
       <div className="text-right">
-        <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+        <p className="font-semibold">R${(item.price * item.quantity).toFixed(2)}</p>
         <Button
           variant="ghost"
           size="icon"
@@ -52,7 +52,7 @@ export function CartItem({ item }: CartItemProps) {
           onClick={() => removeFromCart(item.productId)}
         >
           <X className="h-4 w-4" />
-          <span className="sr-only">Remove item</span>
+          <span className="sr-only">Remover item</span>
         </Button>
       </div>
     </div>

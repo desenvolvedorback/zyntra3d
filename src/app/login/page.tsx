@@ -27,16 +27,16 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({
-        title: "Success!",
-        description: "You have successfully logged in.",
+        title: "Sucesso!",
+        description: "Você fez login com sucesso.",
       });
       router.push("/");
     } catch (error: any) {
       console.error("Login error:", error);
       toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: error.message || "An unknown error occurred.",
+        title: "Falha no Login",
+        description: error.message || "Ocorreu um erro desconhecido.",
       });
     } finally {
       setLoading(false);
@@ -48,8 +48,8 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <Logo className="mx-auto mb-4" />
-          <CardTitle className="text-2xl font-headline text-primary">Welcome Back</CardTitle>
-          <CardDescription>Enter your credentials to access your account.</CardDescription>
+          <CardTitle className="text-2xl font-headline text-primary">Bem-vindo de volta</CardTitle>
+          <CardDescription>Insira suas credenciais para acessar sua conta.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -58,7 +58,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="voce@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -66,7 +66,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
                 type="password"
@@ -77,15 +77,15 @@ export default function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" /> : "Log In"}
+              {loading ? <Loader2 className="animate-spin" /> : "Entrar"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            Não tem uma conta?{" "}
             <Button variant="link" asChild className="p-0">
-              <Link href="/signup">Sign up</Link>
+              <Link href="/signup">Cadastre-se</Link>
             </Button>
           </p>
         </CardFooter>

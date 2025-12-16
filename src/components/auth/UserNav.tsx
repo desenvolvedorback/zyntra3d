@@ -36,7 +36,7 @@ export function UserNav() {
   if (!user || !userProfile) {
     return (
       <Button asChild>
-        <Link href="/login">Login</Link>
+        <Link href="/login">Entrar</Link>
       </Button>
     );
   }
@@ -67,14 +67,14 @@ export function UserNav() {
           <DropdownMenuItem asChild>
             <Link href="/profile">
               <UserIcon className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+              <span>Perfil</span>
             </Link>
           </DropdownMenuItem>
           {isAdmin && (
             <DropdownMenuItem asChild>
               <Link href="/admin/dashboard">
                 <LayoutDashboard className="mr-2 h-4 w-4" />
-                <span>Dashboard</span>
+                <span>Painel</span>
               </Link>
             </DropdownMenuItem>
           )}
@@ -82,7 +82,7 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>Sair</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

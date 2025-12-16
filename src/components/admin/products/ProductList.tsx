@@ -23,11 +23,11 @@ export function ProductList({ products }: ProductListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-24">Image</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead className="w-32">Price</TableHead>
-            <TableHead className="w-32">Stock</TableHead>
-            <TableHead className="w-16 text-right">Actions</TableHead>
+            <TableHead className="w-24">Imagem</TableHead>
+            <TableHead>Nome</TableHead>
+            <TableHead className="w-32">Preço</TableHead>
+            <TableHead className="w-32">Estoque</TableHead>
+            <TableHead className="w-16 text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -44,14 +44,14 @@ export function ProductList({ products }: ProductListProps) {
                   />
                 </TableCell>
                 <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell>${product.price.toFixed(2)}</TableCell>
+                <TableCell>R${product.price.toFixed(2)}</TableCell>
                 <TableCell>
                   {product.stock > 0 ? (
                     <Badge variant={product.stock < 10 ? "destructive" : "secondary"}>
-                      {product.stock} in stock
+                      {product.stock} em estoque
                     </Badge>
                   ) : (
-                    <Badge variant="outline">Out of stock</Badge>
+                    <Badge variant="outline">Fora de estoque</Badge>
                   )}
                 </TableCell>
                 <TableCell className="text-right">
@@ -62,7 +62,7 @@ export function ProductList({ products }: ProductListProps) {
           ) : (
             <TableRow>
               <TableCell colSpan={5} className="h-24 text-center">
-                No products found.
+                Nenhum produto encontrado.
               </TableCell>
             </TableRow>
           )}

@@ -10,9 +10,9 @@ export function Logo({ className }: { className?: string }) {
         "animate-subtle-rotate",
         className
       )}
-      aria-label="DoceLink Home"
+      aria-label="Doce Sabor Home"
     >
-      DoceLink
+      Doce Sabor
     </Link>
   );
 }

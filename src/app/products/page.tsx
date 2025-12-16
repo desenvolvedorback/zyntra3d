@@ -24,7 +24,7 @@ export default async function ProductsPage() {
   return (
     <div className="container mx-auto py-12">
       <h1 className="text-4xl md:text-5xl font-headline text-center text-primary mb-12">
-        Our Sweet Collection
+        Nossa Doce Coleção
       </h1>
       {products.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
@@ -45,7 +45,7 @@ export default async function ProductsPage() {
                 <CardTitle className="font-headline text-2xl text-primary h-16">
                   <Link href={`/products/${product.id}`}>{product.name}</Link>
                 </CardTitle>
-                <p className="text-muted-foreground mt-2 text-lg font-bold">${product.price.toFixed(2)}</p>
+                <p className="text-muted-foreground mt-2 text-lg font-bold">R${product.price.toFixed(2)}</p>
                 <div className="mt-auto pt-4">
                   <AddToCartButton product={product} />
                 </div>
@@ -54,7 +54,7 @@ export default async function ProductsPage() {
           ))}
         </div>
       ) : (
-        <p className="text-center text-muted-foreground">Our sweets are being baked! Please check back soon.</p>
+        <p className="text-center text-muted-foreground">Nossos doces estão sendo preparados! Por favor, volte em breve.</p>
       )}
     </div>
   );

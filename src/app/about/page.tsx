@@ -9,15 +9,15 @@ export default function AboutPage() {
     <div className="container mx-auto py-12 md:py-20">
       <div className="grid md:grid-cols-2 gap-12 items-center">
         <div className="space-y-6">
-          <h1 className="text-4xl md:text-5xl font-headline text-primary">Our Story</h1>
+          <h1 className="text-4xl md:text-5xl font-headline text-primary">Nossa História</h1>
           <p className="text-lg font-alegreya text-foreground/80 leading-relaxed">
-            DoceLink was born from a simple idea: to share the joy of exceptional, handcrafted sweets with everyone, everywhere. We believe that a little bit of sweetness can brighten any day, and we wanted to make it as easy as sharing a link.
+            A Doce Sabor nasceu de uma ideia simples: compartilhar a alegria de doces excepcionais e artesanais com todos, em todos os lugares. Acreditamos que um pouco de doçura pode alegrar qualquer dia, e queríamos tornar isso tão fácil quanto compartilhar um link.
           </p>
           <p className="text-lg font-alegreya text-foreground/80 leading-relaxed">
-            Our journey began in a small home kitchen, fueled by a passion for baking and a desire to connect people through delicious treats. We pour our hearts into every recipe, using only the finest ingredients to create confections that are both beautiful and unforgettable.
+            Nossa jornada começou em uma pequena cozinha de casa, alimentada pela paixão por confeitaria e pelo desejo de conectar pessoas através de guloseimas deliciosas. Colocamos nosso coração em cada receita, usando apenas os melhores ingredientes para criar doces que são bonitos e inesquecíveis.
           </p>
           <p className="text-lg font-alegreya text-foreground/80 leading-relaxed">
-            From our kitchen to your hands, we hope every bite brings you as much happiness as we find in creating it.
+            Da nossa cozinha para as suas mãos, esperamos que cada mordida traga a você tanta felicidade quanto encontramos em criá-la.
           </p>
         </div>
         <div>

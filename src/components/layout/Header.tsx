@@ -10,13 +10,13 @@ export function Header() {
         <Logo />
         <nav className="hidden md:flex md:items-center md:space-x-6 md:ml-10 text-sm font-medium">
           <Link href="/" className="transition-colors hover:text-foreground/80 text-foreground/60">
-            Home
+            Início
           </Link>
           <Link href="/products" className="transition-colors hover:text-foreground/80 text-foreground/60">
-            Sweets
+            Doces
           </Link>
           <Link href="/about" className="transition-colors hover:text-foreground/80 text-foreground/60">
-            About
+            Sobre
           </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-4">

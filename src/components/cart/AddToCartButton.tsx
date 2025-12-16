@@ -27,14 +27,14 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
         stock: product.stock,
       });
       toast({
-        title: "Added to cart!",
-        description: `${product.name} is now in your cart.`,
+        title: "Adicionado ao carrinho!",
+        description: `${product.name} está agora no seu carrinho.`,
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Could not add item to cart.",
+        title: "Erro",
+        description: "Não foi possível adicionar o item ao carrinho.",
       });
     } finally {
       setLoading(false);
@@ -52,7 +52,7 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
       ) : (
         <>
          {product.stock > 0 ? <ShoppingCart className="mr-2" /> : null}
-         {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+         {product.stock > 0 ? "Adicionar ao Carrinho" : "Fora de Estoque"}
         </>
       )}
     </Button>

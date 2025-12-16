@@ -39,10 +39,10 @@ export const CellActions: React.FC<CellActionsProps> = ({ data }) => {
     setLoading(true);
     try {
       await deleteProduct(data.id);
-      toast({ title: "Success", description: "Product deleted." });
+      toast({ title: "Sucesso", description: "Produto excluído." });
       router.refresh();
     } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "Failed to delete product." });
+      toast({ variant: "destructive", title: "Erro", description: "Falha ao excluir produto." });
     } finally {
       setLoading(false);
       setOpen(false);
@@ -54,15 +54,15 @@ export const CellActions: React.FC<CellActionsProps> = ({ data }) => {
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this product.
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente este produto.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={onDelete} disabled={loading}>
-              Continue
+              Continuar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -70,19 +70,19 @@ export const CellActions: React.FC<CellActionsProps> = ({ data }) => {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
-            <span className="sr-only">Open menu</span>
+            <span className="sr-only">Abrir menu</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuLabel>Ações</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => router.push(`/admin/products/edit/${data.id}`)}>
             <Pencil className="mr-2 h-4 w-4" />
-            Edit
+            Editar
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen(true)} className="text-destructive focus:text-destructive">
             <Trash2 className="mr-2 h-4 w-4" />
-            Delete
+            Excluir
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

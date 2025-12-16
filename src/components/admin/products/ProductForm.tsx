@@ -52,8 +52,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
     if (!title) {
       toast({
         variant: "destructive",
-        title: "Product Name Required",
-        description: "Please enter a product name to generate a description.",
+        title: "Nome do Produto Necessário",
+        description: "Por favor, insira um nome de produto para gerar uma descrição.",
       });
       return;
     }
@@ -63,15 +63,15 @@ export function ProductForm({ initialData }: ProductFormProps) {
       if (result.description) {
         form.setValue("description", result.description, { shouldValidate: true });
         toast({
-          title: "Description Generated!",
-          description: "The AI-powered description has been added.",
+          title: "Descrição Gerada!",
+          description: "A descrição gerada por IA foi adicionada.",
         });
       }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "AI Generation Failed",
-        description: "Could not generate description. Please try again.",
+        title: "Falha na Geração por IA",
+        description: "Não foi possível gerar a descrição. Por favor, tente novamente.",
       });
     } finally {
       setAiLoading(false);
@@ -83,18 +83,18 @@ export function ProductForm({ initialData }: ProductFormProps) {
     try {
       if (initialData) {
         await updateProduct(initialData.id, data);
-        toast({ title: "Success", description: "Product updated." });
+        toast({ title: "Sucesso", description: "Produto atualizado." });
       } else {
         await addProduct(data);
-        toast({ title: "Success", description: "Product created." });
+        toast({ title: "Sucesso", description: "Produto criado." });
       }
       router.push("/admin/products");
       router.refresh();
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Something went wrong.",
+        title: "Erro",
+        description: "Algo deu errado.",
       });
     } finally {
       setLoading(false);
@@ -108,8 +108,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
           <div className="lg:col-span-2 space-y-8">
             <Card>
               <CardHeader>
-                <CardTitle>Product Details</CardTitle>
-                <CardDescription>Main information about the product.</CardDescription>
+                <CardTitle>Detalhes do Produto</CardTitle>
+                <CardDescription>Informações principais sobre o produto.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <FormField
@@ -117,9 +117,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Product Name</FormLabel>
+                      <FormLabel>Nome do Produto</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Chocolate Fudge Cake" {...field} disabled={loading} />
+                        <Input placeholder="ex: Bolo de Chocolate" {...field} disabled={loading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -131,14 +131,14 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <div className="flex items-center justify-between">
-                        <FormLabel>Description</FormLabel>
+                        <FormLabel>Descrição</FormLabel>
                          <Button type="button" variant="ghost" size="sm" onClick={handleGenerateDescription} disabled={aiLoading}>
                            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                           <span className="ml-2">Generate with AI</span>
+                           <span className="ml-2">Gerar com IA</span>
                          </Button>
                       </div>
                       <FormControl>
-                        <Textarea placeholder="Describe the product..." {...field} rows={10} disabled={loading || aiLoading} />
+                        <Textarea placeholder="Descreva o produto..." {...field} rows={10} disabled={loading || aiLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -148,8 +148,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Media</CardTitle>
-                <CardDescription>Product image settings.</CardDescription>
+                <CardTitle>Mídia</CardTitle>
+                <CardDescription>Configurações de imagem do produto.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <FormField
@@ -157,7 +157,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   name="imageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Image URL</FormLabel>
+                      <FormLabel>URL da Imagem</FormLabel>
                       <FormControl>
                         <Input placeholder="https://picsum.photos/seed/..." {...field} disabled={loading} />
                       </FormControl>
@@ -170,9 +170,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   name="imageHint"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Image Hint</FormLabel>
+                      <FormLabel>Dica de Imagem</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. 'chocolate cake'" {...field} disabled={loading} />
+                        <Input placeholder="ex: 'bolo de chocolate'" {...field} disabled={loading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -184,7 +184,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
           <div className="space-y-8">
             <Card>
               <CardHeader>
-                <CardTitle>Pricing & Inventory</CardTitle>
+                <CardTitle>Preço & Estoque</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                  <FormField
@@ -192,7 +192,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price</FormLabel>
+                      <FormLabel>Preço</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="19.99" {...field} disabled={loading} />
                       </FormControl>
@@ -205,7 +205,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   name="stock"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Stock Quantity</FormLabel>
+                      <FormLabel>Quantidade em Estoque</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="100" {...field} disabled={loading} />
                       </FormControl>
@@ -222,11 +222,11 @@ export function ProductForm({ initialData }: ProductFormProps) {
         
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {initialData ? "Save Changes" : "Create Product"}
+            {initialData ? "Salvar Alterações" : "Criar Produto"}
           </Button>
         </div>
       </form>

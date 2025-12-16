@@ -23,10 +23,10 @@ export function NewsList({ news }: NewsListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-24">Image</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead className="w-48">Created At</TableHead>
-            <TableHead className="w-16 text-right">Actions</TableHead>
+            <TableHead className="w-24">Imagem</TableHead>
+            <TableHead>Título</TableHead>
+            <TableHead className="w-48">Criado em</TableHead>
+            <TableHead className="w-16 text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -43,7 +43,7 @@ export function NewsList({ news }: NewsListProps) {
                   />
                 </TableCell>
                 <TableCell className="font-medium">{article.title}</TableCell>
-                <TableCell>{format(article.createdAt as Date, 'MMMM d, yyyy')}</TableCell>
+                <TableCell>{format(article.createdAt as Date, 'd \'de\' MMMM, yyyy')}</TableCell>
                 <TableCell className="text-right">
                   <CellActions data={article} />
                 </TableCell>
@@ -52,7 +52,7 @@ export function NewsList({ news }: NewsListProps) {
           ) : (
             <TableRow>
               <TableCell colSpan={4} className="h-24 text-center">
-                No news articles found.
+                Nenhuma notícia encontrada.
               </TableCell>
             </TableRow>
           )}

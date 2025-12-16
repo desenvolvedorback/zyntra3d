@@ -43,18 +43,18 @@ export function NewsForm({ initialData }: NewsFormProps) {
     try {
       if (initialData) {
         await updateNewsArticle(initialData.id, data);
-        toast({ title: "Success", description: "News article updated." });
+        toast({ title: "Sucesso", description: "Notícia atualizada." });
       } else {
         await addNewsArticle(data);
-        toast({ title: "Success", description: "News article created." });
+        toast({ title: "Sucesso", description: "Notícia criada." });
       }
       router.push("/admin/news");
       router.refresh();
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Something went wrong.",
+        title: "Erro",
+        description: "Algo deu errado.",
       });
     } finally {
       setLoading(false);
@@ -64,7 +64,7 @@ export function NewsForm({ initialData }: NewsFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{initialData ? "Edit Article" : "Create Article"}</CardTitle>
+        <CardTitle>{initialData ? "Editar Artigo" : "Criar Artigo"}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -74,9 +74,9 @@ export function NewsForm({ initialData }: NewsFormProps) {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>Título</FormLabel>
                   <FormControl>
-                    <Input placeholder="Summer Special Announcement" {...field} disabled={loading} />
+                    <Input placeholder="Anúncio Especial de Verão" {...field} disabled={loading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -87,9 +87,9 @@ export function NewsForm({ initialData }: NewsFormProps) {
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Content</FormLabel>
+                  <FormLabel>Conteúdo</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Full content of the news article..." {...field} rows={8} disabled={loading} />
+                    <Textarea placeholder="Conteúdo completo da notícia..." {...field} rows={8} disabled={loading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -100,7 +100,7 @@ export function NewsForm({ initialData }: NewsFormProps) {
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image URL</FormLabel>
+                  <FormLabel>URL da Imagem</FormLabel>
                   <FormControl>
                     <Input placeholder="https://picsum.photos/seed/..." {...field} disabled={loading} />
                   </FormControl>
@@ -113,9 +113,9 @@ export function NewsForm({ initialData }: NewsFormProps) {
               name="imageHint"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image Hint</FormLabel>
+                  <FormLabel>Dica de Imagem</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. 'baking cookies'" {...field} disabled={loading} />
+                    <Input placeholder="ex: 'assando cookies'" {...field} disabled={loading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -123,11 +123,11 @@ export function NewsForm({ initialData }: NewsFormProps) {
             />
             <div className="flex justify-end gap-4">
               <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {initialData ? "Save Changes" : "Create Article"}
+                {initialData ? "Salvar Alterações" : "Criar Artigo"}
               </Button>
             </div>
           </form>
