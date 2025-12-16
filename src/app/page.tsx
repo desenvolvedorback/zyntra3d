@@ -20,8 +20,7 @@ async function getFeaturedProducts() {
         return { 
             id: doc.id,
             ...data,
-            createdAt: data.createdAt.toDate()
-        } as Product
+        } as Omit<Product, 'createdAt'> & { createdAt: any }
     });
   } catch (error) {
     console.error("Error fetching featured products:", error);
@@ -51,7 +50,7 @@ async function getLatestNews() {
 }
 
 export default async function HomePage() {
-  const heroImage = PlaceHolderImages.find(p => p.id === 'chocolate-cake');
+  const heroImage = PlaceHolderImages.find(p => p.id === 'logo');
   const featuredProducts = await getFeaturedProducts();
   const latestNews = await getLatestNews();
 
@@ -110,7 +109,15 @@ export default async function HomePage() {
                     <CardTitle className="font-headline text-2xl text-primary">{product.name}</CardTitle>
                     <p className="text-muted-foreground mt-2 text-lg font-bold">R${product.price.toFixed(2)}</p>
                     <div className="mt-auto pt-4">
-                       <AddToCartButton product={product} />
+                       <AddToCartButton 
+                          product={{
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            imageUrl: product.imageUrl,
+                            stock: product.stock,
+                          }}
+                       />
                     </div>
                   </CardContent>
                 </Card>

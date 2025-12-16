@@ -3,8 +3,8 @@
     {
       "id": "chocolate-cake",
       "description": "A rich and decadent chocolate layer cake.",
-      "imageUrl": "https://images.unsplash.com/photo-1586985289906-406988974504?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjaG9jb2xhdGUlMjBjYWtlfGVufDB8fHx8MTc2NTg5MjQzOXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "chocolate cake"
+      "imageUrl": "https://files.catbox.moe/xyowu6.jpeg",
+      "imageHint": "doce sabor logo"
     },
     {
       "id": "strawberry-tart",
@@ -15,8 +15,8 @@
     {
       "id": "assorted-macarons",
       "description": "A colorful assortment of delicate French macarons.",
-      "imageUrl": "https://images.unsplash.com/photo-1714387278170-d560a9b6f08a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y29sb3JmdWwlMjBtYWNhcm9uc3xlbnwwfHx8fDE3NjU4OTQ5NTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "colorful macarons"
+      "imageUrl": "https://files.catbox.moe/xyowu6.jpeg",
+      "imageHint": "doce sabor logo"
     },
     {
       "id": "vanilla-cupcakes",
@@ -47,6 +47,12 @@
       "description": "Tangy lemon filling topped with toasted meringue.",
       "imageUrl": "https://images.unsplash.com/photo-1681329142517-6daaa56d3670?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxsZW1vbiUyMHBpZXxlbnwwfHx8fDE3NjU4OTQ5NTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "lemon pie"
+    },
+    {
+      "id": "logo",
+      "description": "Logo da Doce Sabor",
+      "imageUrl": "https://files.catbox.moe/xyowu6.jpeg",
+      "imageHint": "doce sabor logo"
     }
   ]
 }

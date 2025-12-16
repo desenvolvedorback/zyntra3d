@@ -3,7 +3,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AboutPage() {
-  const aboutImage = PlaceHolderImages.find(p => p.id === 'assorted-macarons');
+  const aboutImage = PlaceHolderImages.find(p => p.id === 'logo');
 
   return (
     <div className="container mx-auto py-12 md:py-20">
