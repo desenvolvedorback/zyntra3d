@@ -6,14 +6,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { EditProfileDialog } from "@/components/profile/EditProfileDialog";
 
 export default function ProfilePage() {
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -73,16 +70,8 @@ export default function ProfilePage() {
                   <span className="font-semibold">{userProfile.phone}</span>
               </div>
           </CardContent>
-          <div className="p-6 pt-0 flex justify-end">
-            <Button onClick={() => setIsEditDialogOpen(true)}>Editar Perfil</Button>
-          </div>
         </Card>
       </div>
-      <EditProfileDialog 
-        isOpen={isEditDialogOpen} 
-        onOpenChange={setIsEditDialogOpen}
-        userProfile={userProfile}
-      />
     </>
   );
 }
