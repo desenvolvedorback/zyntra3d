@@ -19,7 +19,7 @@ import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { pagbankCheckout } from "@/lib/actions/pagbankCheckout";
 import { useRouter } from "next/navigation";
@@ -39,7 +39,7 @@ export function CartSheet() {
     deliveryFee,
   } = useCart();
   const [isClient, setIsClient] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -50,7 +50,7 @@ export function CartSheet() {
 
   const finalPrice = delivery ? totalPrice + deliveryFee : totalPrice;
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (delivery && !location.trim()) {
       toast({
         variant: "destructive",
@@ -60,30 +60,29 @@ export function CartSheet() {
       return;
     }
 
-    setIsCheckingOut(true);
+    startTransition(async () => {
+      try {
+        const checkoutUrl = await pagbankCheckout({
+          items: cartItems,
+          delivery: delivery,
+          deliveryFee: deliveryFee,
+          location: location
+        });
+        
+        if (checkoutUrl) {
+           window.location.href = checkoutUrl;
+        } else {
+          throw new Error("Não foi possível gerar o link de pagamento.");
+        }
 
-    try {
-      const checkoutUrl = await pagbankCheckout({
-        items: cartItems,
-        delivery: delivery,
-        deliveryFee: deliveryFee,
-        location: location
-      });
-      
-      if (checkoutUrl) {
-         window.location.href = checkoutUrl;
-      } else {
-        throw new Error("Não foi possível gerar o link de pagamento.");
+      } catch (error: any) {
+         toast({
+          variant: "destructive",
+          title: "Erro no Checkout",
+          description: error.message || "Não foi possível iniciar o pagamento. Tente novamente.",
+        });
       }
-
-    } catch (error: any) {
-       toast({
-        variant: "destructive",
-        title: "Erro no Checkout",
-        description: error.message || "Não foi possível iniciar o pagamento. Tente novamente.",
-      });
-       setIsCheckingOut(false);
-    }
+    });
   };
 
   if (!isClient) {
@@ -178,22 +177,19 @@ export function CartSheet() {
                   </div>
                  </div>
                 <Button
-                  asChild
                   className="w-full"
                   size="lg"
                   onClick={handleCheckout}
-                  disabled={isCheckingOut}
+                  disabled={isPending}
                 >
-                  <div>
-                    {isCheckingOut ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      <>
-                        <CreditCard className="mr-2" />
-                        Pagar com PagBank
-                      </>
-                    )}
-                  </div>
+                  {isPending ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2" />
+                      Pagar com PagBank
+                    </>
+                  )}
                 </Button>
                 <Button variant="outline" className="w-full" onClick={clearCart}>
                     <Trash2 className="mr-2 h-4 w-4" /> Limpar Carrinho
