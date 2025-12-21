@@ -4,19 +4,23 @@ import type { CartItem } from '@/lib/types';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { items, delivery, deliveryFee, location } = body as {
+    const body = await request.json() as {
       items: CartItem[];
       delivery: boolean;
       deliveryFee: number;
       location: string;
     };
     
-    if (!items || items.length === 0) {
+    if (!body.items || body.items.length === 0) {
       return NextResponse.json({ message: "O carrinho está vazio." }, { status: 400 });
     }
     
-    const checkoutUrl = await pagbankCheckout({ items, delivery, deliveryFee, location });
+    const checkoutUrl = await pagbankCheckout({ 
+      items: body.items, 
+      delivery: body.delivery, 
+      deliveryFee: body.deliveryFee, 
+      location: body.location 
+    });
 
     if (checkoutUrl) {
       return NextResponse.json({ checkoutUrl });

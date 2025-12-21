@@ -104,7 +104,7 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location }
         const response = await fetch("https://api.pagseguro.com/orders", {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${pagbankToken}`,
+                "Authorization": `${pagbankToken}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(checkoutData),
