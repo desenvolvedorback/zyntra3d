@@ -177,7 +177,7 @@ export function CartSheet() {
                     <span>R$ {finalPrice.toFixed(2)}</span>
                   </div>
                  </div>
-                <Button className="w-full" size="lg" onClick={handleCheckout} disabled={isCheckingOut}>
+                <Button type="button" className="w-full" size="lg" onClick={handleCheckout} disabled={isCheckingOut}>
                   {isCheckingOut ? (
                     <Loader2 className="animate-spin" />
                   ) : (
