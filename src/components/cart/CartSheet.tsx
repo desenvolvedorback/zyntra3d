@@ -14,13 +14,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, ShoppingCart, Trash2 } from "lucide-react";
+import { CreditCard, Loader2, ShoppingCart, Trash2 } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { pagbankCheckout } from "@/lib/actions/pagbankCheckout";
+import { useRouter } from "next/navigation";
+
 
 export function CartSheet() {
   const { 
@@ -36,7 +39,10 @@ export function CartSheet() {
     deliveryFee,
   } = useCart();
   const [isClient, setIsClient] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
+
 
   useEffect(() => {
     setIsClient(true);
@@ -44,7 +50,7 @@ export function CartSheet() {
 
   const finalPrice = delivery ? totalPrice + deliveryFee : totalPrice;
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (delivery && !location.trim()) {
       toast({
         variant: "destructive",
@@ -54,34 +60,30 @@ export function CartSheet() {
       return;
     }
 
-    const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
-    if (!number) {
-      alert("O número do WhatsApp não está configurado.");
-      return;
+    setIsCheckingOut(true);
+
+    try {
+      const checkoutUrl = await pagbankCheckout({
+        items: cartItems,
+        delivery: delivery,
+        deliveryFee: deliveryFee,
+        location: location
+      });
+      
+      if (checkoutUrl) {
+         window.location.href = checkoutUrl;
+      } else {
+        throw new Error("Não foi possível gerar o link de pagamento.");
+      }
+
+    } catch (error: any) {
+       toast({
+        variant: "destructive",
+        title: "Erro no Checkout",
+        description: error.message || "Não foi possível iniciar o pagamento. Tente novamente.",
+      });
+       setIsCheckingOut(false);
     }
-    
-    const messageItems = cartItems.map(item => 
-      `${item.name} (x${item.quantity}) - R$${(item.price * item.quantity).toFixed(2)}`
-    ).join("\n");
-
-    let deliveryInfo = "";
-    if (delivery) {
-      deliveryInfo = `\n\n---
-Taxa de Entrega: R$${deliveryFee.toFixed(2)}
-Endereço: ${location}
----`;
-    }
-
-    const message = encodeURIComponent(
-`Olá! Gostaria de fazer um pedido:
----
-${messageItems}
----
-Subtotal: R$${totalPrice.toFixed(2)}${deliveryInfo}
-Total: R$${finalPrice.toFixed(2)}`
-    );
-
-    window.open(`https://wa.me/${number}?text=${message}`, "_blank");
   };
 
   if (!isClient) {
@@ -175,8 +177,15 @@ Total: R$${finalPrice.toFixed(2)}`
                     <span>R$ {finalPrice.toFixed(2)}</span>
                   </div>
                  </div>
-                <Button className="w-full" size="lg" onClick={handleCheckout}>
-                  Finalizar via WhatsApp
+                <Button className="w-full" size="lg" onClick={handleCheckout} disabled={isCheckingOut}>
+                  {isCheckingOut ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2" />
+                      Pagar com PagBank
+                    </>
+                  )}
                 </Button>
                 <Button variant="outline" className="w-full" onClick={clearCart}>
                     <Trash2 className="mr-2 h-4 w-4" /> Limpar Carrinho

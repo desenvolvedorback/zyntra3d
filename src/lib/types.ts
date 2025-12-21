@@ -1,4 +1,5 @@
 
+
 export interface Product {
   id: string;
   name: string;
@@ -33,4 +34,25 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   role: 'customer' | 'admin';
+}
+
+export interface Order {
+  id?: string;
+  referenceId: string;
+  items: {
+    productId: string;
+    name: string;
+    quantity: number;
+    price: number;
+  }[];
+  total: number;
+  delivery: boolean;
+  deliveryFee: number;
+  location: string;
+  status: 'pending' | 'paid' | 'cancelled';
+  createdAt: Date;
+  customer?: {
+    name: string;
+    email: string;
+  };
 }
