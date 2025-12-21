@@ -99,7 +99,7 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
     try {
         const response = await axios.post("https://api.pagseguro.com/orders", checkoutData, {
             headers: {
-                "Authorization": pagbankToken,
+                "Authorization": `Bearer ${pagbankToken}`,
                 "Content-Type": "application/json",
             },
         });
