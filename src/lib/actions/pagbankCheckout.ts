@@ -120,7 +120,6 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
                 const errorMessage = `Erro do PagBank no campo '${errorDetails.parameter_name}': ${errorDetails.description}.`;
                 throw new Error(errorMessage);
             }
-             console.error('Axios error details:', JSON.stringify(error.response?.data, null, 2));
              throw new Error(`Erro de comunicação com PagBank: ${error.message}`);
         }
         
