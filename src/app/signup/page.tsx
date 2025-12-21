@@ -25,6 +25,8 @@ export default function SignupPage() {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -47,8 +49,6 @@ export default function SignupPage() {
       try {
         const token = await window.grecaptcha.enterprise.execute('6Lc5eC0sAAAAAF1tCihMIO3M1cvhoZX3Tek3OPcQ', {action: 'SIGNUP'});
         
-        // Note: For full security, this token should be verified on a backend server.
-        // As this is a frontend-only action for now, we proceed after getting the token.
         if (!token) {
           throw new Error("Verificação reCAPTCHA falhou.");
         }
@@ -63,6 +63,8 @@ export default function SignupPage() {
           uid: user.uid,
           email: user.email,
           displayName: displayName,
+          cpf,
+          phone,
           role: 'customer', // Default role
         });
 
@@ -115,6 +117,30 @@ export default function SignupPage() {
                 placeholder="voce@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="cpf">CPF</Label>
+              <Input
+                id="cpf"
+                type="text"
+                placeholder="000.000.000-00"
+                value={cpf}
+                onChange={(e) => setCpf(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                type="text"
+                placeholder="(00) 00000-0000"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 required
                 disabled={loading}
               />

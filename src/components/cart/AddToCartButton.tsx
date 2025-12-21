@@ -25,6 +25,7 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
         price: product.price,
         imageUrl: product.imageUrl,
         stock: product.stock,
+        category: product.category,
       });
       toast({
         title: "Adicionado ao carrinho!",

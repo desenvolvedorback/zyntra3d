@@ -1,5 +1,3 @@
-
-
 export interface Product {
   id: string;
   name: string;
@@ -34,6 +32,8 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   role: 'customer' | 'admin';
+  cpf: string;
+  phone: string;
 }
 
 export interface Order {

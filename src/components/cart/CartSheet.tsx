@@ -19,25 +19,41 @@ import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { AuthContext } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+
+declare global {
+  interface Window {
+    grecaptcha: any;
+  }
+}
 
 export function CartSheet() {
-  const { 
-    cartItems, 
-    cartCount, 
-    totalPrice, 
-    clearCart, 
-    loading,
+  const {
+    cartItems,
+    cartCount,
+    totalPrice,
+    clearCart,
+    loading: cartLoading,
     delivery,
     setDelivery,
     location,
     setLocation,
     deliveryFee,
   } = useCart();
+
   const [isClient, setIsClient] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
+
+  const authContext = useContext(AuthContext);
+  if (!authContext) {
+    throw new Error("AuthProvider não encontrado na árvore de componentes.");
+  }
+  const { user, userProfile, loading: authLoading } = authContext;
 
   useEffect(() => {
     setIsClient(true);
@@ -46,6 +62,27 @@ export function CartSheet() {
   const finalPrice = delivery ? totalPrice + deliveryFee : totalPrice;
 
   const handleCheckout = async () => {
+    if (authLoading) return;
+
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Login Necessário",
+        description: "Você precisa estar logado para finalizar a compra.",
+      });
+      router.push('/login');
+      return;
+    }
+
+    if (!userProfile || !userProfile.cpf || !userProfile.phone) {
+        toast({
+          variant: "destructive",
+          title: "Aguarde um instante...",
+          description: "Seus dados de perfil ainda estão carregando. Por favor, tente novamente em alguns segundos.",
+        });
+        return;
+    }
+
     if (delivery && !location.trim()) {
       toast({
         variant: "destructive",
@@ -55,45 +92,60 @@ export function CartSheet() {
       return;
     }
     
-    setIsProcessing(true);
-
-    try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items: cartItems,
-          delivery: delivery,
-          deliveryFee: deliveryFee,
-          location: location
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Falha ao criar o pedido.");
-      }
-
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        throw new Error("Não foi possível obter o link de pagamento.");
-      }
-
-    } catch (error: any) {
-       toast({
-        variant: "destructive",
-        title: "Erro no Checkout",
-        description: error.message || "Não foi possível iniciar o pagamento. Tente novamente.",
-      });
-    } finally {
-      setIsProcessing(false);
+    if (typeof window.grecaptcha === "undefined") {
+        toast({
+            variant: "destructive",
+            title: "Falha na verificação",
+            description: "O componente de segurança não carregou. Por favor, recarregue a página.",
+        });
+        return;
     }
-  };
 
+    window.grecaptcha.enterprise.ready(async () => {
+      setIsProcessing(true);
+      try {
+          const token = await window.grecaptcha.enterprise.execute('6Lc5eC0sAAAAAF1tCihMIO3M1cvhoZX3Tek3OPcQ', { action: 'CHECKOUT' });
+
+          if (!token) {
+              throw new Error("A verificação de segurança (reCAPTCHA) falhou. Tente novamente.");
+          }
+
+          const response = await fetch('/api/checkout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  items: cartItems,
+                  delivery: delivery,
+                  deliveryFee: deliveryFee,
+                  location: location,
+                  userProfile: userProfile,
+                  recaptchaToken: token
+              }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+              throw new Error(data.message || "Falha ao criar o pedido.");
+          }
+
+          if (data.checkoutUrl) {
+              window.location.href = data.checkoutUrl;
+          } else {
+              throw new Error("Não foi possível obter o link de pagamento.");
+          }
+
+      } catch (error: any) {
+          toast({
+              variant: "destructive",
+              title: "Erro no Checkout",
+              description: error.message || "Não foi possível iniciar o pagamento. Tente novamente.",
+          });
+      } finally {
+          setIsProcessing(false);
+      }
+    });
+  };
 
   if (!isClient) {
     return (
@@ -126,10 +178,10 @@ export function CartSheet() {
         </SheetHeader>
         <Separator className="my-4" />
 
-        {loading ? (
-            <div className="flex flex-1 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+        {cartLoading ? (
+          <div className="flex flex-1 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
         ) : cartItems.length > 0 ? (
           <>
             <ScrollArea className="flex-grow pr-6">
@@ -142,7 +194,7 @@ export function CartSheet() {
             <SheetFooter className="mt-auto">
               <div className="w-full space-y-4">
                 <Separator />
-                 <div className="space-y-4">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="delivery-switch" className="flex flex-col gap-1">
                       <span>Adicionar entrega</span>
@@ -157,13 +209,13 @@ export function CartSheet() {
 
                   {delivery && (
                     <div className="space-y-2">
-                       <Label htmlFor="location">Seu Endereço</Label>
-                       <Input 
-                         id="location" 
-                         placeholder="Rua, Número, Bairro, etc."
-                         value={location}
-                         onChange={(e) => setLocation(e.target.value)}
-                       />
+                      <Label htmlFor="location">Seu Endereço</Label>
+                      <Input
+                        id="location"
+                        placeholder="Rua, Número, Bairro, etc."
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                      />
                     </div>
                   )}
 
@@ -176,8 +228,8 @@ export function CartSheet() {
 
                   {delivery && (
                     <div className="flex justify-between text-sm text-muted-foreground">
-                       <span>Taxa de Entrega</span>
-                       <span>R$ {deliveryFee.toFixed(2)}</span>
+                      <span>Taxa de Entrega</span>
+                      <span>R$ {deliveryFee.toFixed(2)}</span>
                     </div>
                   )}
 
@@ -185,25 +237,25 @@ export function CartSheet() {
                     <span>Total</span>
                     <span>R$ {finalPrice.toFixed(2)}</span>
                   </div>
-                 </div>
+                </div>
                 <Button
                   type="button"
                   className="w-full"
                   size="lg"
                   onClick={handleCheckout}
-                  disabled={isProcessing}
+                  disabled={isProcessing || authLoading}
                 >
-                  {isProcessing ? (
+                  {isProcessing || authLoading ? (
                     <Loader2 className="animate-spin" />
                   ) : (
                     <>
                       <CreditCard className="mr-2" />
-                      Pagar com PagBank
+                      {user ? "Pagar com PagBank" : "Faça login para pagar"}
                     </>
                   )}
                 </Button>
                 <Button variant="outline" className="w-full" onClick={clearCart}>
-                    <Trash2 className="mr-2 h-4 w-4" /> Limpar Carrinho
+                  <Trash2 className="mr-2 h-4 w-4" /> Limpar Carrinho
                 </Button>
               </div>
             </SheetFooter>
@@ -216,9 +268,9 @@ export function CartSheet() {
               Adicione alguns doces para começar!
             </p>
             <SheetClose asChild>
-                <Button asChild className="mt-6">
-                    <a href="/products">Explorar Doces</a>
-                </Button>
+              <Button asChild className="mt-6">
+                <a href="/products">Explorar Doces</a>
+              </Button>
             </SheetClose>
           </div>
         )}
