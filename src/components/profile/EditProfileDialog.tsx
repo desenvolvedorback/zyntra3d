@@ -58,8 +58,8 @@ export function EditProfileDialog({ isOpen, onOpenChange, userProfile }: EditPro
         await updateProfile(user, { displayName: data.displayName });
       }
       
-      // 2. Atualiza o restante no Firestore (lado do servidor)
-      const result = await updateUserProfile(userProfile.uid, {
+      // 2. Atualiza o restante no Firestore (lado do servidor, de forma segura)
+      const result = await updateUserProfile({
         displayName: data.displayName,
         cpf: data.cpf,
         phone: data.phone,
