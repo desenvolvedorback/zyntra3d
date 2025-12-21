@@ -56,3 +56,9 @@ export interface Order {
     email: string;
   };
 }
+
+export type ProfileUpdateData = {
+  displayName: string;
+  cpf: string;
+  phone: string;
+};
