@@ -16,7 +16,6 @@ export async function pagbankCheckout(args: PagBankCheckoutArgs): Promise<string
   const pagbankToken = process.env.PAGBANK_TOKEN;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9003';
 
-
   if (!pagbankToken) {
     throw new Error("Credenciais do PagBank não configuradas no servidor.");
   }
@@ -49,14 +48,14 @@ export async function pagbankCheckout(args: PagBankCheckoutArgs): Promise<string
     qr_codes: [
       {
         amount: {
-          value: Math.round(items.reduce((acc, item) => acc + item.price * item.quantity, deliveryFee) * 100),
+          value: Math.round(items.reduce((acc, item) => acc + item.price * item.quantity, 0) * 100) + Math.round(deliveryFee * 100),
         },
       },
     ],
     notification_urls: [`${siteUrl}/api/pagbank-webhook`],
   };
 
-  if (deliveryFee > 0) {
+  if (deliveryFee > 0 && location) {
     orderData.items.push({
       name: "Taxa de Entrega",
       quantity: 1,
@@ -71,28 +70,36 @@ export async function pagbankCheckout(args: PagBankCheckoutArgs): Promise<string
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: pagbankToken,
+          Authorization: `Bearer ${pagbankToken}`,
+          "x-api-version": "4.0"
         },
       }
     );
-
-    const pixQrCode = response.data.qr_codes.find((qr: any) => qr.links.some((link: any) => link.rel === 'image/png'));
-    if (pixQrCode) {
-       const pixLink = pixQrCode.links.find((link: any) => link.rel === 'image/png');
-       return pixLink?.href || null;
+    
+    if (response.data.qr_codes && response.data.qr_codes.length > 0) {
+      const qrCode = response.data.qr_codes[0];
+      if (qrCode.links && qrCode.links.length > 0) {
+        const pngLink = qrCode.links.find((link: any) => link.rel === "image/png");
+        if (pngLink) return pngLink.href;
+      }
     }
-
-    // Fallback to the first payment link if PIX QR code is not available
+    
     if (response.data.links && response.data.links.length > 0) {
-      return response.data.links.find((link: any) => link.rel === 'PAY')?.href || null;
+      const paymentLink = response.data.links.find((link: any) => link.rel === "PAY");
+      if (paymentLink) return paymentLink.href;
     }
 
     return null;
 
   } catch (error: any) {
     if (axios.isAxiosError(error) && error.response) {
-      console.error("Erro detalhado do PagBank:", JSON.stringify(error.response.data, null, 2));
-      const errorDetails = error.response.data.error_messages.map((e: any) => `${e.field}: ${e.description}`).join('; ');
+      const errorData = error.response.data;
+      // Handle the whitelist error specifically
+      if (errorData.message === 'whitelist access required. Contact PagSeguro.') {
+        throw new Error("Acesso à API não autorizado. Verifique a whitelist de IPs na sua conta PagSeguro.");
+      }
+      
+      const errorDetails = errorData.error_messages?.map((e: any) => `${e.field || 'Erro'}: ${e.description}`).join('; ') || 'Ocorreu um erro desconhecido.';
       throw new Error(errorDetails);
     }
     throw error;
