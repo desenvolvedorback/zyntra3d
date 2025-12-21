@@ -183,7 +183,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
             <Card>
               <CardHeader>
                 <CardTitle>Preço & Estoque</CardTitle>
-              </Header>
+              </CardHeader>
               <CardContent className="space-y-6">
                  <FormField
                   control={form.control}
@@ -216,7 +216,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
              <Card>
               <CardHeader>
                 <CardTitle>Organização</CardTitle>
-              </Header>
+              </CardHeader>
               <CardContent className="space-y-6">
                  <FormField
                   control={form.control}
