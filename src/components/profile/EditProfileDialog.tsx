@@ -18,9 +18,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile } from "@/lib/types";
-import { updateUserProfile } from "@/lib/actions/userActions";
 import { useAuth } from "@/hooks/useAuth";
 import { updateProfile } from "firebase/auth";
+import axios from "axios";
 
 interface EditProfileDialogProps {
   isOpen: boolean;
@@ -51,35 +51,45 @@ export function EditProfileDialog({ isOpen, onOpenChange, userProfile }: EditPro
   });
 
   const onSubmit = async (data: ProfileUpdateValues) => {
+    if (!user) {
+      toast({ variant: "destructive", title: "Erro de Autenticação", description: "Usuário não encontrado." });
+      return;
+    }
     setLoading(true);
     try {
       // 1. Atualiza o nome no Firebase Auth (lado do cliente)
-      if (user && user.displayName !== data.displayName) {
+      if (user.displayName !== data.displayName) {
         await updateProfile(user, { displayName: data.displayName });
       }
       
-      // 2. Atualiza o restante no Firestore (lado do servidor, de forma segura)
-      const result = await updateUserProfile({
-        displayName: data.displayName,
-        cpf: data.cpf,
-        phone: data.phone,
+      // 2. Obtém o token de ID para provar a identidade ao backend
+      const idToken = await user.getIdToken();
+
+      // 3. Atualiza o restante no Firestore através de uma API Route segura
+      const response = await axios.post('/api/user/update-profile', data, {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
       });
 
-      if (result.success) {
+      if (response.data.success) {
         toast({
           title: "Sucesso!",
-          description: result.message,
+          description: response.data.message,
         });
+        // Forçar a recarga da página para que o AuthProvider busque os novos dados
+        window.location.reload(); 
         onOpenChange(false);
       } else {
-        throw new Error(result.message);
+        throw new Error(response.data.message);
       }
 
     } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || "Não foi possível atualizar o perfil.";
       toast({
         variant: "destructive",
         title: "Erro ao atualizar",
-        description: error.message || "Não foi possível atualizar o perfil.",
+        description: errorMessage,
       });
     } finally {
       setLoading(false);
