@@ -177,15 +177,23 @@ export function CartSheet() {
                     <span>R$ {finalPrice.toFixed(2)}</span>
                   </div>
                  </div>
-                <Button type="button" className="w-full" size="lg" onClick={handleCheckout} disabled={isCheckingOut}>
-                  {isCheckingOut ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <>
-                      <CreditCard className="mr-2" />
-                      Pagar com PagBank
-                    </>
-                  )}
+                <Button
+                  asChild
+                  className="w-full"
+                  size="lg"
+                  onClick={handleCheckout}
+                  disabled={isCheckingOut}
+                >
+                  <div>
+                    {isCheckingOut ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <>
+                        <CreditCard className="mr-2" />
+                        Pagar com PagBank
+                      </>
+                    )}
+                  </div>
                 </Button>
                 <Button variant="outline" className="w-full" onClick={clearCart}>
                     <Trash2 className="mr-2 h-4 w-4" /> Limpar Carrinho
