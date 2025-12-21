@@ -2,10 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { doc, updateDoc } from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { z } from "zod";
-import { getAuth } from "firebase-admin/auth";
-import { adminApp } from "../firebase-admin";
 
 const profileUpdateSchema = z.object({
   displayName: z.string().min(3, "O nome deve ter pelo menos 3 caracteres."),
@@ -16,28 +14,29 @@ const profileUpdateSchema = z.object({
 type ProfileUpdateValues = z.infer<typeof profileUpdateSchema>;
 
 export async function updateUserProfile(uid: string, data: ProfileUpdateValues) {
-  const validation = profileUpdateSchema.safeParse(data);
+  try {
+    const validation = profileUpdateSchema.safeParse(data);
 
-  if (!validation.success) {
-    const errorMessages = validation.error.errors.map(e => e.message).join(', ');
-    throw new Error(`Dados inválidos: ${errorMessages}`);
+    if (!validation.success) {
+      const errorMessages = validation.error.errors.map(e => e.message).join(', ');
+      throw new Error(`Dados inválidos: ${errorMessages}`);
+    }
+
+    const { displayName, cpf, phone } = validation.data;
+
+    // Atualizar perfil no Firestore
+    const docRef = doc(db, "users", uid);
+    await updateDoc(docRef, {
+      displayName,
+      cpf,
+      phone,
+    });
+
+    revalidatePath("/profile");
+
+    return { success: true, message: "Perfil atualizado com sucesso!" };
+
+  } catch (error: any) {
+    return { success: false, message: error.message || "Falha ao atualizar o perfil." };
   }
-
-  const { displayName, cpf, phone } = validation.data;
-
-  // Atualizar nome no Firebase Auth
-  const auth_ = getAuth(adminApp);
-  await auth_.updateUser(uid, { displayName });
-
-  // Atualizar perfil no Firestore
-  const docRef = doc(db, "users", uid);
-  await updateDoc(docRef, {
-    displayName,
-    cpf,
-    phone,
-  });
-
-  revalidatePath("/profile");
-
-  return { success: true, message: "Perfil atualizado com sucesso!" };
 }

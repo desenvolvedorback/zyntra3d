@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile } from "@/lib/types";
 import { updateUserProfile } from "@/lib/actions/userActions";
+import { useAuth } from "@/hooks/useAuth";
+import { updateProfile } from "firebase/auth";
 
 interface EditProfileDialogProps {
   isOpen: boolean;
@@ -36,6 +38,7 @@ type ProfileUpdateValues = z.infer<typeof profileUpdateSchema>;
 
 export function EditProfileDialog({ isOpen, onOpenChange, userProfile }: EditProfileDialogProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<ProfileUpdateValues>({
@@ -50,14 +53,28 @@ export function EditProfileDialog({ isOpen, onOpenChange, userProfile }: EditPro
   const onSubmit = async (data: ProfileUpdateValues) => {
     setLoading(true);
     try {
-      const result = await updateUserProfile(userProfile.uid, data);
+      // 1. Atualiza o nome no Firebase Auth (lado do cliente)
+      if (user && user.displayName !== data.displayName) {
+        await updateProfile(user, { displayName: data.displayName });
+      }
+      
+      // 2. Atualiza o restante no Firestore (lado do servidor)
+      const result = await updateUserProfile(userProfile.uid, {
+        displayName: data.displayName,
+        cpf: data.cpf,
+        phone: data.phone,
+      });
+
       if (result.success) {
         toast({
           title: "Sucesso!",
           description: result.message,
         });
         onOpenChange(false);
+      } else {
+        throw new Error(result.message);
       }
+
     } catch (error: any) {
       toast({
         variant: "destructive",
