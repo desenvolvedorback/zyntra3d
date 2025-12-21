@@ -4,7 +4,6 @@
 import type { CartItem } from "@/lib/types";
 import { doc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { headers } from "next/headers";
 import { randomUUID } from "crypto";
 
 interface CheckoutProps {
@@ -15,13 +14,8 @@ interface CheckoutProps {
 }
 
 export async function pagbankCheckout({ items, delivery, deliveryFee, location }: CheckoutProps) {
-    console.log("Iniciando processo de checkout do PagBank...");
-
     const pagbankToken = process.env.PAGBANK_TOKEN;
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-
-    console.log("PAGBANK_TOKEN:", pagbankToken ? "Carregado" : "NÃO ENCONTRADO");
-    console.log("NEXT_PUBLIC_SITE_URL:", siteUrl ? "Carregado" : "NÃO ENCONTRADO");
 
     if (!pagbankToken) {
         throw new Error("Credenciais do PagBank não configuradas.");
@@ -35,7 +29,6 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location }
 
     const referenceId = randomUUID();
 
-    // 1. Salvar o pedido no Firestore com status 'pending'
     const orderData = {
         referenceId,
         items: items.map(item => ({
@@ -54,13 +47,11 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location }
 
     try {
       await addDoc(collection(db, "orders"), orderData);
-      console.log("Pedido salvo no Firestore com referenceId:", referenceId);
     } catch (dbError) {
       console.error("Erro ao salvar pedido no Firestore:", dbError);
       throw new Error("Falha ao registrar o pedido internamente.");
     }
 
-    // 2. Preparar dados para a API do PagBank
     const orderItems = items.map(item => ({
         "name": item.name,
         "quantity": item.quantity,
@@ -96,15 +87,11 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location }
         "redirect_url": `${siteUrl}/order-confirmation?ref=${referenceId}`
     };
 
-    console.log("Enviando os seguintes dados para o PagBank:", JSON.stringify(checkoutData, null, 2));
-
-
-    // 3. Chamar a API do PagBank para criar o pedido
     try {
         const response = await fetch("https://api.pagseguro.com/orders", {
             method: "POST",
             headers: {
-                "Authorization": `${pagbankToken}`,
+                "Authorization": `Bearer ${pagbankToken}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(checkoutData),
@@ -117,17 +104,13 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location }
             console.error("PagBank API Error - Body:", JSON.stringify(responseBody, null, 2));
             throw new Error(responseBody.error_messages?.[0]?.description || "Falha ao criar pedido no PagBank.");
         }
-
-        console.log("Resposta bem-sucedida do PagBank:", JSON.stringify(responseBody, null, 2));
         
         const checkoutLink = responseBody.links?.find((link: any) => link.rel === 'SELF')?.href;
 
         if (!checkoutLink) {
-             console.error("Link de checkout não encontrado na resposta do PagBank.");
              throw new Error("Link de checkout não encontrado na resposta do PagBank.");
         }
         
-        console.log("Link de checkout gerado:", checkoutLink);
         return checkoutLink;
 
     } catch (error) {
