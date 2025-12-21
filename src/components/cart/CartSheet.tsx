@@ -73,6 +73,8 @@ export function CartSheet() {
           title: "Dados Incompletos",
           description: "Seu perfil precisa ter um CPF e telefone válidos para continuar.",
         });
+        // Idealmente, redirecionar para a página de perfil para edição.
+        router.push('/profile');
         return;
     }
 
@@ -111,6 +113,7 @@ export function CartSheet() {
         setIsProcessing(false);
     }
   };
+
 
   if (!isClient) {
     return (

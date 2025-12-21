@@ -4,6 +4,7 @@ import type { CartItem, UserProfile } from "@/lib/types";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { randomUUID } from "crypto";
+import axios from "axios";
 
 interface CheckoutProps {
     items: CartItem[];
@@ -15,14 +16,18 @@ interface CheckoutProps {
 
 export async function pagbankCheckout({ items, delivery, deliveryFee, location, userProfile }: CheckoutProps) {
     const pagbankToken = process.env.PAGBANK_TOKEN;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
     if (!pagbankToken) {
         throw new Error("PAGBANK_TOKEN não está configurado nas variáveis de ambiente.");
     }
+     if (!siteUrl) {
+        throw new Error("NEXT_PUBLIC_SITE_URL não está configurado.");
+    }
     if (!items || items.length === 0) {
         throw new Error("O carrinho está vazio.");
     }
-     if (!userProfile || !userProfile.uid || !userProfile.cpf || !userProfile.phone || !userProfile.displayName || !userProfile.email) {
+    if (!userProfile || !userProfile.uid || !userProfile.cpf || !userProfile.phone || !userProfile.displayName || !userProfile.email) {
         throw new Error("Dados do usuário incompletos para finalizar a compra.");
     }
 
@@ -80,8 +85,8 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
             "phones": [{ "country": "55", "area": phoneArea, "number": phoneNumber, "type": "MOBILE" }]
         },
         "items": orderItems,
-        "redirect_url": `https://doce-sabor-2f261.web.app/order-confirmation?ref=${referenceId}`,
-        "notification_urls": [`https://doce-sabor-2f261.web.app/api/webhooks/pagbank`],
+        "redirect_url": `${siteUrl}/order-confirmation?ref=${referenceId}`,
+        "notification_urls": [`${siteUrl}/api/webhooks/pagbank`],
         "charges": [{
             "reference_id": `charge_${referenceId}`,
             "description": "Pagamento do pedido Doce Sabor",
@@ -91,26 +96,14 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
     };
 
     try {
-        const response = await fetch("https://api.pagbank.com.br/orders", {
-            method: "POST",
+        const response = await axios.post("https://api.pagbank.com.br/orders", checkoutData, {
             headers: {
                 "Authorization": pagbankToken,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(checkoutData),
         });
         
-        const responseBody = await response.json();
-        
-        if (!response.ok) {
-            const mainError = responseBody.error_messages?.[0];
-            if (mainError) {
-                const errorDetails = `Erro do PagBank no campo '${mainError.parameter_name}': ${mainError.description}.`;
-                throw new Error(errorDetails);
-            }
-            throw new Error("Falha na comunicação com o PagBank. Verifique os logs do servidor.");
-        }
-        
+        const responseBody = response.data;
         const checkoutLink = responseBody.qr_codes?.[0]?.links?.[0]?.href;
 
         if (!checkoutLink) {
@@ -120,6 +113,16 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
         return { checkoutUrl: checkoutLink };
 
     } catch (error) {
+        if (axios.isAxiosError(error)) {
+            const errorDetails = error.response?.data?.error_messages?.[0];
+             if (errorDetails) {
+                const errorMessage = `Erro do PagBank no campo '${errorDetails.parameter_name}': ${errorDetails.description}.`;
+                throw new Error(errorMessage);
+            }
+             console.error('Axios error details:', JSON.stringify(error.response?.data, null, 2));
+             throw new Error(`Erro de comunicação com PagBank: ${error.message}`);
+        }
+        
         if (error instanceof Error) {
             throw new Error(`Erro final na função pagbankCheckout: ${error.message}`);
         }
