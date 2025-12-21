@@ -23,7 +23,7 @@ import { useState, useEffect, useContext, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { pagbankCheckout } from "@/lib/actions/pagbankCheckout";
+import { mercadoPagoCheckout } from "@/lib/actions/mercadoPagoCheckout";
 
 export function CartSheet() {
   const {
@@ -88,24 +88,23 @@ export function CartSheet() {
     
     startTransition(async () => {
       try {
-        const checkoutUrl = await pagbankCheckout({
+        const checkoutUrl = await mercadoPagoCheckout({
           items: cartItems,
           userProfile,
           deliveryFee: delivery ? deliveryFee : 0,
-          location,
         });
 
         if (checkoutUrl) {
-          window.open(checkoutUrl, '_blank');
+          window.location.href = checkoutUrl;
         } else {
           throw new Error("URL de checkout não recebida.");
         }
       } catch (error: any) {
-        console.error("Erro final no checkout:", error);
+        console.error("Erro no checkout:", error);
         toast({
           variant: "destructive",
           title: "Erro no Checkout",
-          description: `Erro de comunicação com PagBank: ${error.message}`,
+          description: `Falha na comunicação com o Mercado Pago: ${error.message}`,
         });
       }
     });
@@ -216,7 +215,7 @@ export function CartSheet() {
                   ) : (
                     <>
                       <CreditCard className="mr-2" />
-                      Pagar com PagBank
+                      Pagar com Mercado Pago
                     </>
                   )}
                 </Button>

@@ -14,7 +14,7 @@ export function Footer() {
         <div className="flex-grow" />
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <ShieldCheck className="h-5 w-5 text-green-600" />
-          <span>Pagamento Seguro via WhatsApp</span>
+          <span>Pagamento Seguro via Mercado Pago</span>
         </div>
       </div>
     </footer>
