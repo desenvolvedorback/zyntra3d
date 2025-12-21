@@ -23,12 +23,7 @@ import { useState, useEffect, useContext } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-
-declare global {
-  interface Window {
-    grecaptcha: any;
-  }
-}
+import { pagbankCheckout } from "@/lib/actions/pagbankCheckout";
 
 export function CartSheet() {
   const {
@@ -62,8 +57,6 @@ export function CartSheet() {
   const finalPrice = delivery ? totalPrice + deliveryFee : totalPrice;
 
   const handleCheckout = async () => {
-    if (authLoading) return;
-
     if (!user) {
       toast({
         variant: "destructive",
@@ -74,11 +67,11 @@ export function CartSheet() {
       return;
     }
 
-    if (!userProfile || !userProfile.cpf || !userProfile.phone) {
+    if (!userProfile?.cpf || !userProfile?.phone) {
         toast({
           variant: "destructive",
-          title: "Aguarde um instante...",
-          description: "Seus dados de perfil ainda estão carregando. Por favor, tente novamente em alguns segundos.",
+          title: "Dados Incompletos",
+          description: "Seu perfil precisa ter um CPF e telefone válidos para continuar.",
         });
         return;
     }
@@ -92,59 +85,31 @@ export function CartSheet() {
       return;
     }
     
-    if (typeof window.grecaptcha === "undefined") {
+    setIsProcessing(true);
+    try {
+        const result = await pagbankCheckout({
+            items: cartItems,
+            delivery: delivery,
+            deliveryFee: deliveryFee,
+            location: location,
+            userProfile: userProfile,
+        });
+
+        if (result.checkoutUrl) {
+            window.location.href = result.checkoutUrl;
+        } else {
+            throw new Error("Não foi possível obter o link de pagamento.");
+        }
+
+    } catch (error: any) {
         toast({
             variant: "destructive",
-            title: "Falha na verificação",
-            description: "O componente de segurança não carregou. Por favor, recarregue a página.",
+            title: "Erro no Checkout",
+            description: error.message || "Não foi possível iniciar o pagamento. Tente novamente.",
         });
-        return;
+    } finally {
+        setIsProcessing(false);
     }
-
-    window.grecaptcha.enterprise.ready(async () => {
-      setIsProcessing(true);
-      try {
-          const token = await window.grecaptcha.enterprise.execute('6Lc5eC0sAAAAAF1tCihMIO3M1cvhoZX3Tek3OPcQ', { action: 'CHECKOUT' });
-
-          if (!token) {
-              throw new Error("A verificação de segurança (reCAPTCHA) falhou. Tente novamente.");
-          }
-
-          const response = await fetch('/api/checkout', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  items: cartItems,
-                  delivery: delivery,
-                  deliveryFee: deliveryFee,
-                  location: location,
-                  userProfile: userProfile,
-                  recaptchaToken: token
-              }),
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-              throw new Error(data.message || "Falha ao criar o pedido.");
-          }
-
-          if (data.checkoutUrl) {
-              window.location.href = data.checkoutUrl;
-          } else {
-              throw new Error("Não foi possível obter o link de pagamento.");
-          }
-
-      } catch (error: any) {
-          toast({
-              variant: "destructive",
-              title: "Erro no Checkout",
-              description: error.message || "Não foi possível iniciar o pagamento. Tente novamente.",
-          });
-      } finally {
-          setIsProcessing(false);
-      }
-    });
   };
 
   if (!isClient) {

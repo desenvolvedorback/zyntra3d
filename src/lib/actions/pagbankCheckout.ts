@@ -1,4 +1,3 @@
-
 "use server";
 
 import type { CartItem, UserProfile } from "@/lib/types";
@@ -16,28 +15,15 @@ interface CheckoutProps {
 
 export async function pagbankCheckout({ items, delivery, deliveryFee, location, userProfile }: CheckoutProps) {
     const pagbankToken = process.env.PAGBANK_TOKEN;
-    const isProduction = process.env.NODE_ENV === 'production';
-    const prodUrl = process.env.NEXT_PUBLIC_SITE_URL;
-    
-    // Define a URL base de acordo com o ambiente
-    const baseUrl = isProduction ? prodUrl : 'http://localhost:3000';
 
-    // Verificações críticas de configuração
     if (!pagbankToken) {
-        throw new Error("ERRO FATAL: O token de API do PagBank (PAGBANK_TOKEN) não foi configurado.");
+        throw new Error("PAGBANK_TOKEN não está configurado nas variáveis de ambiente.");
     }
-    if (isProduction && !prodUrl) {
-        throw new Error("ERRO FATAL: A URL do site (NEXT_PUBLIC_SITE_URL) não foi configurada para o ambiente de produção.");
-    }
-    if (!baseUrl) {
-        throw new Error("ERRO FATAL: A URL base para retornos de pagamento não pôde ser determinada.");
-    }
-    if (items.length === 0) {
+    if (!items || items.length === 0) {
         throw new Error("O carrinho está vazio.");
     }
-    if (!userProfile || !userProfile.cpf || !userProfile.phone) {
-        const receivedKeys = userProfile ? Object.keys(userProfile).join(', ') : 'perfil nulo';
-        throw new Error(`Dados essenciais do cliente (CPF/Telefone) estão faltando. Campos recebidos: [${receivedKeys}]`);
+     if (!userProfile || !userProfile.uid || !userProfile.cpf || !userProfile.phone || !userProfile.displayName || !userProfile.email) {
+        throw new Error("Dados do usuário incompletos para finalizar a compra.");
     }
 
     const referenceId = randomUUID();
@@ -53,6 +39,10 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
         location: delivery ? location : "",
         status: "pending",
         createdAt: serverTimestamp(),
+        customer: {
+            name: userProfile.displayName,
+            email: userProfile.email,
+        }
     };
 
     try {
@@ -76,14 +66,10 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
         });
     }
     
-    // Limpeza e formatação rigorosa dos dados
     const cleanCpf = userProfile.cpf.replace(/[^0-9]/g, '');
     const cleanPhone = userProfile.phone.replace(/[^0-9]/g, '');
     const phoneArea = cleanPhone.substring(0, 2);
     const phoneNumber = cleanPhone.substring(2);
-
-    if (cleanCpf.length !== 11) throw new Error(`CPF inválido fornecido: '${userProfile.cpf}'.`);
-    if (cleanPhone.length < 10 || cleanPhone.length > 11) throw new Error(`Telefone inválido fornecido: '${userProfile.phone}'.`);
 
     const checkoutData = {
         "reference_id": referenceId,
@@ -94,8 +80,8 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
             "phones": [{ "country": "55", "area": phoneArea, "number": phoneNumber, "type": "MOBILE" }]
         },
         "items": orderItems,
-        "redirect_url": `${baseUrl}/order-confirmation?ref=${referenceId}`,
-        "notification_urls": [`${baseUrl}/api/webhooks/pagbank`],
+        "redirect_url": `https://doce-sabor-2f261.web.app/order-confirmation?ref=${referenceId}`,
+        "notification_urls": [`https://doce-sabor-2f261.web.app/api/webhooks/pagbank`],
         "charges": [{
             "reference_id": `charge_${referenceId}`,
             "description": "Pagamento do pedido Doce Sabor",
@@ -117,11 +103,6 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
         const responseBody = await response.json();
         
         if (!response.ok) {
-            console.error("--- ERRO DA API PAGBANK ---");
-            console.error("Status:", response.status);
-            console.error("Payload Enviado:", JSON.stringify(checkoutData, null, 2));
-            console.error("Resposta Recebida:", JSON.stringify(responseBody, null, 2));
-            
             const mainError = responseBody.error_messages?.[0];
             if (mainError) {
                 const errorDetails = `Erro do PagBank no campo '${mainError.parameter_name}': ${mainError.description}.`;
@@ -133,15 +114,15 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
         const checkoutLink = responseBody.qr_codes?.[0]?.links?.[0]?.href;
 
         if (!checkoutLink) {
-             console.error("Resposta do PagBank bem-sucedida, mas o link de checkout (qr_codes.links.href) não foi encontrado.", responseBody);
              throw new Error("Link de pagamento não retornado pelo PagBank.");
         }
         
-        return checkoutLink;
+        return { checkoutUrl: checkoutLink };
 
     } catch (error) {
-        console.error("Erro final capturado na função pagbankCheckout:", error);
-        // Re-lança o erro (que agora é muito mais detalhado) para a API route.
-        throw error;
+        if (error instanceof Error) {
+            throw new Error(`Erro final na função pagbankCheckout: ${error.message}`);
+        }
+        throw new Error("Ocorreu um erro desconhecido durante o checkout com o PagBank.");
     }
 }
