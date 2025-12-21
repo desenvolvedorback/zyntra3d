@@ -1,4 +1,3 @@
-
 "use server";
 
 import type { CartItem, UserProfile } from "@/lib/types";
@@ -54,7 +53,6 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
     try {
       await addDoc(collection(db, "orders"), orderData);
     } catch (dbError) {
-      console.error("Erro ao salvar pedido no Firestore:", dbError);
       throw new Error("Falha ao registrar o pedido no banco de dados.");
     }
 
@@ -99,7 +97,7 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
     try {
         const response = await axios.post("https://api.pagseguro.com/orders", checkoutData, {
             headers: {
-                "Authorization": `Bearer ${pagbankToken}`,
+                "Authorization": `${pagbankToken}`,
                 "Content-Type": "application/json",
             },
         });
