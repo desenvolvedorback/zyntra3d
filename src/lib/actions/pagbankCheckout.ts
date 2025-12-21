@@ -1,3 +1,4 @@
+
 "use server";
 
 import type { CartItem, UserProfile } from "@/lib/types";
@@ -96,7 +97,7 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
     };
 
     try {
-        const response = await axios.post("https://api.pagbank.com.br/orders", checkoutData, {
+        const response = await axios.post("https://api.pagseguro.com/orders", checkoutData, {
             headers: {
                 "Authorization": pagbankToken,
                 "Content-Type": "application/json",
@@ -114,7 +115,7 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location, 
 
     } catch (error) {
         if (axios.isAxiosError(error)) {
-            const errorDetails = error.response?.data?.error_messages?.[0];
+             const errorDetails = error.response?.data?.error_messages?.[0];
              if (errorDetails) {
                 const errorMessage = `Erro do PagBank no campo '${errorDetails.parameter_name}': ${errorDetails.description}.`;
                 throw new Error(errorMessage);
