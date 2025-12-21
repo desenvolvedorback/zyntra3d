@@ -19,11 +19,11 @@ import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { PagSeguroForm } from "./PagSeguroForm";
+import { pagbankCheckout } from "@/lib/actions/pagbankCheckout";
 
 export function CartSheet() {
   const {
@@ -40,9 +40,9 @@ export function CartSheet() {
   } = useCart();
 
   const [isClient, setIsClient] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const authContext = useContext(AuthContext);
   if (!authContext) {
@@ -57,14 +57,14 @@ export function CartSheet() {
   const finalPrice = delivery ? totalPrice + deliveryFee : totalPrice;
 
   const handleCheckout = () => {
-     if (!user) {
+    if (!user || !userProfile) {
       toast({
         variant: "destructive",
         title: "Login Necessário",
         description: "Você precisa estar logado para finalizar a compra.",
       });
       router.push('/login');
-      return false;
+      return;
     }
 
     if (!userProfile?.cpf || !userProfile?.phone) {
@@ -74,7 +74,7 @@ export function CartSheet() {
           description: "Seu perfil precisa ter um CPF e telefone válidos para continuar.",
         });
         router.push('/profile');
-        return false;
+        return;
     }
 
     if (delivery && !location.trim()) {
@@ -83,11 +83,32 @@ export function CartSheet() {
         title: "Endereço Necessário",
         description: "Por favor, insira o seu endereço para a entrega.",
       });
-      return false;
+      return;
     }
+    
+    startTransition(async () => {
+      try {
+        const checkoutUrl = await pagbankCheckout({
+          items: cartItems,
+          userProfile,
+          deliveryFee: delivery ? deliveryFee : 0,
+          location,
+        });
 
-    setIsProcessing(true);
-    return true;
+        if (checkoutUrl) {
+          window.open(checkoutUrl, '_blank');
+        } else {
+          throw new Error("URL de checkout não recebida.");
+        }
+      } catch (error: any) {
+        console.error("Erro final no checkout:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro no Checkout",
+          description: `Erro de comunicação com PagBank: ${error.message}`,
+        });
+      }
+    });
   }
 
   if (!isClient) {
@@ -100,7 +121,7 @@ export function CartSheet() {
   }
 
   return (
-    <Sheet onOpenChange={(open) => !open && setIsProcessing(false)}>
+    <Sheet>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
@@ -147,6 +168,7 @@ export function CartSheet() {
                       id="delivery-switch"
                       checked={delivery}
                       onCheckedChange={setDelivery}
+                      disabled={isPending}
                     />
                   </div>
 
@@ -158,6 +180,7 @@ export function CartSheet() {
                         placeholder="Rua, Número, Bairro, etc."
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
+                        disabled={isPending}
                       />
                     </div>
                   )}
@@ -181,17 +204,24 @@ export function CartSheet() {
                     <span>R$ {finalPrice.toFixed(2)}</span>
                   </div>
                 </div>
-
-                <PagSeguroForm 
-                  items={cartItems}
-                  userProfile={userProfile}
-                  deliveryFee={delivery ? deliveryFee : 0}
-                  onCheckoutStart={handleCheckout}
-                  isProcessing={isProcessing}
-                  setIsProcessing={setIsProcessing}
-                />
                 
-                <Button variant="outline" className="w-full" onClick={clearCart}>
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={handleCheckout}
+                  disabled={isPending || authLoading}
+                >
+                  {isPending ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2" />
+                      Pagar com PagBank
+                    </>
+                  )}
+                </Button>
+                
+                <Button variant="outline" className="w-full" onClick={clearCart} disabled={isPending}>
                   <Trash2 className="mr-2 h-4 w-4" /> Limpar Carrinho
                 </Button>
               </div>
