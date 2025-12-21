@@ -88,6 +88,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
       if (!payload.imageUrl) {
         payload.imageUrl = DEFAULT_IMAGE_URL;
       }
+      
+      // Use category as imageHint
+      payload.imageHint = data.category;
 
       if (initialData) {
         await updateProduct(initialData.id, payload);
@@ -173,19 +176,6 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="imageHint"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Dica de Imagem</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ex: 'bolo de chocolate'" {...field} disabled={loading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </CardContent>
             </Card>
           </div>
@@ -193,7 +183,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
             <Card>
               <CardHeader>
                 <CardTitle>Preço & Estoque</CardTitle>
-              </CardHeader>
+              </Header>
               <CardContent className="space-y-6">
                  <FormField
                   control={form.control}
@@ -226,7 +216,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
              <Card>
               <CardHeader>
                 <CardTitle>Organização</CardTitle>
-              </CardHeader>
+              </Header>
               <CardContent className="space-y-6">
                  <FormField
                   control={form.control}

@@ -7,5 +7,5 @@ export const productSchema = z.object({
   stock: z.coerce.number().int().min(0, "Stock must be a non-negative integer"),
   category: z.string().min(3, "Category is required"),
   imageUrl: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
-  imageHint: z.string().optional().default(""),
+  imageHint: z.string().optional(),
 });

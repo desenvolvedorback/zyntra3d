@@ -93,8 +93,8 @@ export default function ProductsPage() {
             <SelectValue placeholder="Filtrar por categoria" />
           </SelectTrigger>
           <SelectContent>
-            {categories.map(category => (
-              <SelectItem key={category} value={category} className="capitalize">
+            {categories.map((category, index) => (
+              <SelectItem key={`${category}-${index}`} value={category} className="capitalize">
                 {category === 'all' ? 'Todas as Categorias' : category}
               </SelectItem>
             ))}
