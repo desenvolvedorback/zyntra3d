@@ -21,6 +21,9 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location }
     if (!pagbankToken) {
         throw new Error("Credenciais do PagBank não configuradas.");
     }
+    if (!siteUrl) {
+        throw new Error("URL do site não configurada.");
+    }
     if (items.length === 0) {
         throw new Error("O carrinho está vazio.");
     }
@@ -64,8 +67,8 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location }
         "reference_id": referenceId,
         "customer": {
             "name": "Cliente Doce Sabor",
-            "email": "cliente@email.com",
-            "tax_id": "12345678901", // CPF/CNPJ - Pode ser genérico ou solicitado
+            "email": "cliente@doce-sabor.com",
+            "tax_id": "12345678911", 
         },
         "items": orderItems,
         "qr_codes": [
@@ -86,7 +89,7 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location }
         const response = await fetch("https://api.pagseguro.com/orders", {
             method: "POST",
             headers: {
-                "Authorization": pagbankToken,
+                "Authorization": `Bearer ${pagbankToken}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(checkoutData),
@@ -99,14 +102,14 @@ export async function pagbankCheckout({ items, delivery, deliveryFee, location }
             throw new Error(data.error_messages?.[0]?.description || "Falha ao criar pedido no PagBank.");
         }
         
-        const pixQrCodeLink = data.qr_codes?.[0]?.links?.find((link: any) => link.rel === 'QRCODE.PNG')?.href;
-        
-        if (!pixQrCodeLink) {
-            throw new Error("Link de pagamento PIX não encontrado na resposta do PagBank.");
+        // Retorna o link de pagamento do checkout
+        const checkoutLink = data.links?.find((link: any) => link.rel === 'SELF')?.href;
+
+        if (!checkoutLink) {
+             throw new Error("Link de checkout não encontrado na resposta do PagBank.");
         }
         
-        // Retorna o primeiro link de pagamento disponível (geralmente o link do checkout)
-        return data.links?.[0]?.href;
+        return checkoutLink;
 
     } catch (error) {
         console.error("Error creating PagBank order:", error);
