@@ -44,6 +44,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
       description: "",
       price: 0,
       stock: 0,
+      category: "",
       imageUrl: "",
       imageHint: "",
     },
@@ -215,6 +216,26 @@ export function ProductForm({ initialData }: ProductFormProps) {
                       <FormLabel>Quantidade em Estoque</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="100" {...field} disabled={loading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+             <Card>
+              <CardHeader>
+                <CardTitle>Organização</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                 <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Categoria</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ex: Bolos" {...field} disabled={loading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

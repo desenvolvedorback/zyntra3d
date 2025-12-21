@@ -7,6 +7,7 @@ export interface Product {
   imageUrl: string;
   imageHint: string;
   stock: number;
+  category: string;
   createdAt: Date;
 }
 
