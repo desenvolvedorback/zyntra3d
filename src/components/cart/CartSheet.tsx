@@ -19,11 +19,8 @@ import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { pagbankCheckout } from "@/lib/actions/pagbankCheckout";
-import { useRouter } from "next/navigation";
-
 
 export function CartSheet() {
   const { 
@@ -39,10 +36,8 @@ export function CartSheet() {
     deliveryFee,
   } = useCart();
   const [isClient, setIsClient] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
-
 
   useEffect(() => {
     setIsClient(true);
@@ -50,7 +45,7 @@ export function CartSheet() {
 
   const finalPrice = delivery ? totalPrice + deliveryFee : totalPrice;
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (delivery && !location.trim()) {
       toast({
         variant: "destructive",
@@ -59,31 +54,46 @@ export function CartSheet() {
       });
       return;
     }
+    
+    setIsProcessing(true);
 
-    startTransition(async () => {
-      try {
-        const checkoutUrl = await pagbankCheckout({
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           items: cartItems,
           delivery: delivery,
           deliveryFee: deliveryFee,
           location: location
-        });
-        
-        if (checkoutUrl) {
-           window.location.href = checkoutUrl;
-        } else {
-          throw new Error("Não foi possível gerar o link de pagamento.");
-        }
+        }),
+      });
 
-      } catch (error: any) {
-         toast({
-          variant: "destructive",
-          title: "Erro no Checkout",
-          description: error.message || "Não foi possível iniciar o pagamento. Tente novamente.",
-        });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Falha ao criar o pedido.");
       }
-    });
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        throw new Error("Não foi possível obter o link de pagamento.");
+      }
+
+    } catch (error: any) {
+       toast({
+        variant: "destructive",
+        title: "Erro no Checkout",
+        description: error.message || "Não foi possível iniciar o pagamento. Tente novamente.",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
+
 
   if (!isClient) {
     return (
@@ -177,12 +187,13 @@ export function CartSheet() {
                   </div>
                  </div>
                 <Button
+                  type="button"
                   className="w-full"
                   size="lg"
                   onClick={handleCheckout}
-                  disabled={isPending}
+                  disabled={isProcessing}
                 >
-                  {isPending ? (
+                  {isProcessing ? (
                     <Loader2 className="animate-spin" />
                   ) : (
                     <>
