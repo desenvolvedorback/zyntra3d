@@ -23,7 +23,7 @@ import { useState, useEffect, useContext } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { pagbankCheckout } from "@/lib/actions/pagbankCheckout";
+import { PagSeguroForm } from "./PagSeguroForm";
 
 export function CartSheet() {
   const {
@@ -56,15 +56,15 @@ export function CartSheet() {
 
   const finalPrice = delivery ? totalPrice + deliveryFee : totalPrice;
 
-  const handleCheckout = async () => {
-    if (!user) {
+  const handleCheckout = () => {
+     if (!user) {
       toast({
         variant: "destructive",
         title: "Login Necessário",
         description: "Você precisa estar logado para finalizar a compra.",
       });
       router.push('/login');
-      return;
+      return false;
     }
 
     if (!userProfile?.cpf || !userProfile?.phone) {
@@ -73,9 +73,8 @@ export function CartSheet() {
           title: "Dados Incompletos",
           description: "Seu perfil precisa ter um CPF e telefone válidos para continuar.",
         });
-        // Idealmente, redirecionar para a página de perfil para edição.
         router.push('/profile');
-        return;
+        return false;
     }
 
     if (delivery && !location.trim()) {
@@ -84,36 +83,12 @@ export function CartSheet() {
         title: "Endereço Necessário",
         description: "Por favor, insira o seu endereço para a entrega.",
       });
-      return;
+      return false;
     }
-    
+
     setIsProcessing(true);
-    try {
-        const result = await pagbankCheckout({
-            items: cartItems,
-            delivery: delivery,
-            deliveryFee: deliveryFee,
-            location: location,
-            userProfile: userProfile,
-        });
-
-        if (result.checkoutUrl) {
-            window.location.href = result.checkoutUrl;
-        } else {
-            throw new Error("Não foi possível obter o link de pagamento.");
-        }
-
-    } catch (error: any) {
-        toast({
-            variant: "destructive",
-            title: "Erro no Checkout",
-            description: error.message || "Não foi possível iniciar o pagamento. Tente novamente.",
-        });
-    } finally {
-        setIsProcessing(false);
-    }
-  };
-
+    return true;
+  }
 
   if (!isClient) {
     return (
@@ -125,7 +100,7 @@ export function CartSheet() {
   }
 
   return (
-    <Sheet>
+    <Sheet onOpenChange={(open) => !open && setIsProcessing(false)}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
@@ -206,22 +181,16 @@ export function CartSheet() {
                     <span>R$ {finalPrice.toFixed(2)}</span>
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  className="w-full"
-                  size="lg"
-                  onClick={handleCheckout}
-                  disabled={isProcessing || authLoading}
-                >
-                  {isProcessing || authLoading ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <>
-                      <CreditCard className="mr-2" />
-                      {user ? "Pagar com PagBank" : "Faça login para pagar"}
-                    </>
-                  )}
-                </Button>
+
+                <PagSeguroForm 
+                  items={cartItems}
+                  userProfile={userProfile}
+                  deliveryFee={delivery ? deliveryFee : 0}
+                  onCheckoutStart={handleCheckout}
+                  isProcessing={isProcessing}
+                  setIsProcessing={setIsProcessing}
+                />
+                
                 <Button variant="outline" className="w-full" onClick={clearCart}>
                   <Trash2 className="mr-2 h-4 w-4" /> Limpar Carrinho
                 </Button>
