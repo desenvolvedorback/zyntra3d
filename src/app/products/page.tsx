@@ -47,10 +47,10 @@ export default function ProductsPage() {
     fetchProducts();
   }, []);
 
-  const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
+  const categories = ["all", ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
   const filteredProducts = products.filter(product => {
-    const matchesCategory = selectedCategory === "all" || product.category.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesCategory = selectedCategory === "all" || (product.category && product.category.toLowerCase() === selectedCategory.toLowerCase());
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
