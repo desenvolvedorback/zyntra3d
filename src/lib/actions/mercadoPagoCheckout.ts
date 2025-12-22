@@ -136,8 +136,8 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       auto_return: 'approved',
       notification_url: `${siteUrl}/api/mp-webhook`,
       metadata: {
-        orderId: orderRef.id,
-        userId: userProfile.uid,
+        order_id: orderRef.id,
+        user_id: userProfile.uid,
       },
     };
 
@@ -146,7 +146,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     return result.init_point || null;
 
   } catch (error: any) {
-    console.error("Erro ao criar preferência do Mercado Pago:", error.cause || error.message);
+    console.error("Erro ao criar preferência do Mercado Pago:", error.cause?.message || error.message);
     throw new Error("Falha ao iniciar o processo de pagamento.");
   }
 }
