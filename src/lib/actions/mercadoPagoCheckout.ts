@@ -15,8 +15,8 @@ interface CheckoutItem {
 interface MercadoPagoCheckoutArgs {
   items: CheckoutItem[];
   userProfile: UserProfile;
-  deliveryFee: number;
-  location: string;
+  deliveryFee?: number;
+  location?: string;
 }
 
 // Função para gerar o próximo número de pedido
@@ -51,7 +51,7 @@ async function getNextOrderNumber(): Promise<number> {
 
 
 export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promise<string | null> {
-  const { items, userProfile, deliveryFee, location } = args;
+  const { items, userProfile, deliveryFee = 0, location = '' } = args;
 
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!accessToken) {
@@ -77,11 +77,13 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     const orderNumber = await getNextOrderNumber();
     
     const orderRef = doc(collection(db, "orders"));
+    
+    const isDelivery = deliveryFee > 0 && !!location;
 
     const orderPayload = {
       orderNumber,
       status: 'pending' as const,
-      total: items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0) + deliveryFee,
+      total: items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0) + (isDelivery ? deliveryFee : 0),
       items: items.map(item => ({
         id: item.id,
         title: item.title,
@@ -93,9 +95,9 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         name: userProfile.displayName,
         email: userProfile.email,
       },
-      delivery: deliveryFee > 0,
-      deliveryFee: deliveryFee,
-      location: location,
+      delivery: isDelivery,
+      deliveryFee: isDelivery ? deliveryFee : 0,
+      location: isDelivery ? location : '',
       createdAt: serverTimestamp(),
       paymentId: null,
     };
@@ -109,7 +111,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       currency_id: 'BRL',
     }));
 
-    if (deliveryFee > 0) {
+    if (isDelivery && deliveryFee > 0) {
       preferenceItems.push({
         id: 'delivery_fee',
         title: 'Taxa de Entrega',

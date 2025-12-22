@@ -57,7 +57,6 @@ export function CartSheet() {
   }, []);
 
   const finalPrice = delivery ? totalPrice + finalDeliveryFee : totalPrice;
-  const isDeliveryFree = deliveryPromotion && finalDeliveryFee === 0;
 
   const handleCheckout = () => {
     if (!user || !userProfile) {
@@ -93,8 +92,9 @@ export function CartSheet() {
       try {
         const checkoutUrl = await mercadoPagoCheckout({
           items: cartItems.map(item => ({
-            ...item,
-            // Certifique-se que o preço final com desconto seja enviado
+            id: item.productId, // Corrected from id to productId
+            title: item.name,
+            quantity: item.quantity,
             unit_price: item.price,
           })),
           userProfile,
