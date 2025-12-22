@@ -16,7 +16,7 @@ import {
 
 async function getOrders(): Promise<Order[]> {
   const ordersCollection = collection(db, "orders");
-  const q = query(ordersCollection, orderBy("createdAt", "desc"));
+  const q = query(ordersCollection, orderBy("orderNumber", "desc"));
   const orderSnapshot = await getDocs(q);
   const orderList = orderSnapshot.docs.map(doc => {
     const data = doc.data();
