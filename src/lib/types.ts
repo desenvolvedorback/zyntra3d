@@ -8,6 +8,9 @@ export interface Product {
   stock: number;
   category: string;
   createdAt: Date;
+  // Optional promotion fields
+  promotion?: Promotion;
+  promotionalPrice?: number;
 }
 
 export interface News {
@@ -23,7 +26,7 @@ export interface CartItem {
   productId: string;
   quantity: number;
   name: string;
-  price: number;
+  price: number; // This will be the final price (promotional or regular)
   imageUrl: string;
 }
 
@@ -64,4 +67,18 @@ export type ProfileUpdateData = {
   cpf: string;
   phone: string;
 };
-```
+
+export interface Promotion {
+  id: string;
+  name: string;
+  type: 'product' | 'delivery';
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  productId?: string;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+export interface PromotionWithProductName extends Promotion {
+  productName?: string;
+}

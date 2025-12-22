@@ -1,12 +1,19 @@
 'use server';
 
-import type { CartItem, UserProfile } from "@/lib/types";
+import type { UserProfile } from "@/lib/types";
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { db } from "@/lib/firebase";
 import { collection, doc, runTransaction, serverTimestamp, setDoc } from "firebase/firestore";
 
+interface CheckoutItem {
+    id: string;
+    title: string;
+    quantity: number;
+    unit_price: number;
+}
+
 interface MercadoPagoCheckoutArgs {
-  items: CartItem[];
+  items: CheckoutItem[];
   userProfile: UserProfile;
   deliveryFee: number;
   location: string;
@@ -74,12 +81,12 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     const orderPayload = {
       orderNumber,
       status: 'pending' as const,
-      total: items.reduce((sum, item) => sum + item.price * item.quantity, 0) + deliveryFee,
+      total: items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0) + deliveryFee,
       items: items.map(item => ({
-        id: item.productId,
-        title: item.name,
+        id: item.id,
+        title: item.title,
         quantity: item.quantity,
-        unit_price: item.price,
+        unit_price: item.unit_price,
       })),
       customer: {
         id: userProfile.uid,
@@ -95,10 +102,10 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     await setDoc(orderRef, orderPayload);
     
     const preferenceItems = items.map((item) => ({
-      id: item.productId,
-      title: item.name,
+      id: item.id,
+      title: item.title,
       quantity: item.quantity,
-      unit_price: item.price,
+      unit_price: item.unit_price,
       currency_id: 'BRL',
     }));
 

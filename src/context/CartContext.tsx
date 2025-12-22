@@ -1,11 +1,12 @@
 "use client";
 
-import type { Product, CartItem } from "@/lib/types";
+import type { Product, CartItem, Promotion } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
-import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch, query, where } from "firebase/firestore";
 import { createContext, useCallback, useEffect, useState, type ReactNode } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { applyPromotions } from "@/lib/promotions";
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -21,6 +22,7 @@ interface CartContextType {
   location: string;
   setLocation: React.Dispatch<React.SetStateAction<string>>;
   deliveryFee: number;
+  deliveryPromotion: Promotion | null;
 }
 
 export const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -35,6 +37,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [location, setLocation] = useState("");
   const { toast } = useToast();
   const deliveryFee = 10;
+  const [deliveryPromotion, setDeliveryPromotion] = useState<Promotion | null>(null);
 
   const getLocalCart = useCallback((): CartItem[] => {
     if (typeof window === 'undefined') return [];
@@ -54,6 +57,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error saving cart to local storage", error);
     }
+  }, []);
+
+  // Fetch delivery promotion
+  useEffect(() => {
+    const fetchDeliveryPromo = async () => {
+      const promoQuery = query(
+        collection(db, "promotions"), 
+        where("isActive", "==", true), 
+        where("type", "==", "delivery")
+      );
+      const promoSnapshot = await getDocs(promoQuery);
+      if (!promoSnapshot.empty) {
+        const promo = promoSnapshot.docs[0].data() as Promotion;
+        if (promo.discountType === 'fixed' && promo.discountValue >= deliveryFee) {
+          setDeliveryPromotion(promo);
+        } else if (promo.discountType === 'percentage' && promo.discountValue >= 100) {
+          setDeliveryPromotion(promo);
+        }
+      } else {
+        setDeliveryPromotion(null);
+      }
+    };
+    fetchDeliveryPromo();
   }, []);
 
   const mergeAndClearLocalCart = useCallback(async (userId: string) => {
@@ -105,9 +131,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       mergeAndClearLocalCart(user.uid).then(() => {
         const cartRef = collection(db, "carts", user.uid, "items");
-        const unsubscribe = onSnapshot(cartRef, (snapshot) => {
+        const unsubscribe = onSnapshot(cartRef, async (snapshot) => {
           const cloudItems = snapshot.docs.map(d => d.data() as CartItem);
-          setCartItems(cloudItems);
+          
+          if (cloudItems.length > 0) {
+            const productIds = cloudItems.map(item => item.productId);
+            const productsQuery = query(collection(db, "products"), where("__name__", "in", productIds));
+            const promotionsQuery = query(collection(db, "promotions"), where("isActive", "==", true));
+            
+            const [productsSnapshot, promotionsSnapshot] = await Promise.all([
+              getDocs(productsQuery),
+              getDocs(promotionsQuery)
+            ]);
+
+            const productsData = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
+            const promotionsData = promotionsSnapshot.docs.map(doc => doc.data() as Promotion);
+            
+            const productsWithPromos = applyPromotions(productsData, promotionsData);
+            const productMap = new Map(productsWithPromos.map(p => [p.id, p]));
+
+            const updatedCartItems = cloudItems.map(item => {
+              const product = productMap.get(item.productId);
+              return {
+                ...item,
+                price: product?.promotionalPrice ?? product?.price ?? item.price,
+              };
+            });
+            setCartItems(updatedCartItems);
+          } else {
+            setCartItems([]);
+          }
+
           setLoading(false);
         }, (error) => {
             console.error("Error with cart snapshot:", error)
@@ -116,6 +170,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return () => unsubscribe();
       });
     } else {
+      // Local cart logic needs to handle promotions too for consistency, but it's more complex.
+      // For now, local cart will show original prices.
       setCartItems(getLocalCart());
       setLoading(false);
     }
@@ -128,6 +184,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
     
+    // Use promotional price if available
+    const finalPrice = product.promotionalPrice ?? product.price;
+
     if (user) {
       const itemRef = doc(db, "carts", user.uid, "items", product.id);
       const docSnap = await getDoc(itemRef);
@@ -142,7 +201,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       await setDoc(itemRef, { 
         productId: product.id,
         name: product.name,
-        price: product.price,
+        price: finalPrice, // Use final price
         imageUrl: product.imageUrl,
         quantity: newQuantity 
       }, { merge: true });
@@ -160,12 +219,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         let newCart: CartItem[];
         if (existingItem) {
-            newCart = currentItems.map(item => item.productId === product.id ? {...item, quantity: newQuantity} : item);
+            newCart = currentItems.map(item => item.productId === product.id ? {...item, quantity: newQuantity, price: finalPrice} : item);
         } else {
             newCart = [...currentItems, {
                 productId: product.id,
                 name: product.name,
-                price: product.price,
+                price: finalPrice,
                 imageUrl: product.imageUrl,
                 quantity: quantity,
             }];
@@ -253,6 +312,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     location,
     setLocation,
     deliveryFee,
+    deliveryPromotion,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

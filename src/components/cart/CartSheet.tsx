@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { CreditCard, Loader2, ShoppingCart, Trash2 } from "lucide-react";
+import { CreditCard, Loader2, ShoppingCart, Trash2, Tag } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -37,6 +37,7 @@ export function CartSheet() {
     location,
     setLocation,
     deliveryFee,
+    deliveryPromotion,
   } = useCart();
 
   const [isClient, setIsClient] = useState(false);
@@ -54,7 +55,8 @@ export function CartSheet() {
     setIsClient(true);
   }, []);
 
-  const finalPrice = delivery ? totalPrice + deliveryFee : totalPrice;
+  const finalDeliveryFee = deliveryPromotion ? 0 : deliveryFee;
+  const finalPrice = delivery ? totalPrice + finalDeliveryFee : totalPrice;
 
   const handleCheckout = () => {
     if (!user || !userProfile) {
@@ -89,9 +91,13 @@ export function CartSheet() {
     startTransition(async () => {
       try {
         const checkoutUrl = await mercadoPagoCheckout({
-          items: cartItems,
+          items: cartItems.map(item => ({
+            ...item,
+            // Certifique-se que o preço final com desconto seja enviado
+            unit_price: item.price,
+          })),
           userProfile,
-          deliveryFee: delivery ? deliveryFee : 0,
+          deliveryFee: delivery ? finalDeliveryFee : 0,
           location: delivery ? location : "",
         });
 
@@ -162,7 +168,14 @@ export function CartSheet() {
                   <div className="flex items-center justify-between">
                     <Label htmlFor="delivery-switch" className="flex flex-col gap-1">
                       <span>Adicionar entrega</span>
-                      <span className="font-normal text-muted-foreground text-xs">Taxa de R$ {deliveryFee.toFixed(2)}</span>
+                       {deliveryPromotion && (
+                         <span className="font-normal text-red-600 text-xs flex items-center gap-1">
+                           <Tag className="h-3 w-3"/> GRÁTIS HOJE!
+                         </span>
+                       )}
+                      <span className="font-normal text-muted-foreground text-xs">
+                        Taxa padrão: R$ {deliveryFee.toFixed(2)}
+                      </span>
                     </Label>
                     <Switch
                       id="delivery-switch"
@@ -193,9 +206,13 @@ export function CartSheet() {
                   </div>
 
                   {delivery && (
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Taxa de Entrega</span>
-                      <span>R$ {deliveryFee.toFixed(2)}</span>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Taxa de Entrega</span>
+                      {deliveryPromotion ? (
+                         <span className="font-bold text-red-600">GRÁTIS</span>
+                      ) : (
+                         <span>R$ {deliveryFee.toFixed(2)}</span>
+                      )}
                     </div>
                   )}
 

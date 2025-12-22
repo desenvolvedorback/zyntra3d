@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Product } from "@/lib/types";
+import type { Product, Promotion } from "@/lib/types";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,13 +11,14 @@ import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { applyPromotions } from "@/lib/promotions";
 
 async function getProducts(): Promise<Product[]> {
   try {
     const productsCollection = collection(db, "products");
     const q = query(productsCollection, orderBy("createdAt", "desc"));
     const productSnapshot = await getDocs(q);
-    return productSnapshot.docs.map(doc => {
+    const products = productSnapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -25,6 +26,14 @@ async function getProducts(): Promise<Product[]> {
         createdAt: data.createdAt.toDate(),
       } as Product;
     });
+
+    const promotionsCollection = collection(db, "promotions");
+    const promoQuery = query(promotionsCollection, where("isActive", "==", true));
+    const promoSnapshot = await getDocs(promoQuery);
+    const promotions = promoSnapshot.docs.map(doc => doc.data() as Promotion);
+    
+    return applyPromotions(products, promotions);
+
   } catch (error) {
     console.error("Error fetching products:", error);
     return [];
@@ -109,7 +118,14 @@ export default function ProductsPage() {
       ) : filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {filteredProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden group flex flex-col">
+             <Card key={product.id} className="overflow-hidden group flex flex-col relative">
+               {product.promotion && (
+                 <div className="absolute top-2 -right-11 z-10">
+                   <div className="w-48 text-center text-sm font-bold text-white bg-red-600 py-1 transform rotate-45">
+                     PROMOÇÃO
+                   </div>
+                 </div>
+               )}
               <CardHeader className="p-0">
                 <Link href={`/products/${product.id}`} className="block relative aspect-square">
                   <Image
@@ -125,9 +141,23 @@ export default function ProductsPage() {
                 <CardTitle className="font-headline text-2xl text-primary h-16">
                   <Link href={`/products/${product.id}`}>{product.name}</Link>
                 </CardTitle>
-                <p className="text-muted-foreground mt-2 text-lg font-bold">R${product.price.toFixed(2)}</p>
+                <div className="text-lg font-bold mt-2 flex items-baseline gap-2">
+                  {product.promotion ? (
+                    <>
+                      <span className="text-red-600">R${product.promotionalPrice?.toFixed(2)}</span>
+                      <span className="text-muted-foreground line-through text-sm">R${product.price.toFixed(2)}</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">R${product.price.toFixed(2)}</span>
+                  )}
+                </div>
                 <div className="mt-auto pt-4">
-                  <AddToCartButton product={product} />
+                  <AddToCartButton 
+                    product={{
+                      ...product,
+                      price: product.promotionalPrice || product.price,
+                    }}
+                  />
                 </div>
               </CardContent>
             </Card>
