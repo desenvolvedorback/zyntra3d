@@ -6,4 +6,4 @@ To get started, take a look at src/app/page.tsx.
 
 versão atualizada do carrinho 
 
-teste do pagamento
+teste do pagamento 2
