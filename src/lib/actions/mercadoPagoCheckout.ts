@@ -3,7 +3,7 @@
 import type { CartItem, UserProfile } from "@/lib/types";
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { db } from "@/lib/firebase";
-import { collection, doc, runTransaction, serverTimestamp } from "firebase/firestore";
+import { collection, doc, runTransaction, serverTimestamp, setDoc } from "firebase/firestore";
 
 interface MercadoPagoCheckoutArgs {
   items: CartItem[];
@@ -150,4 +150,3 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     throw new Error("Falha ao iniciar o processo de pagamento.");
   }
 }
-```
