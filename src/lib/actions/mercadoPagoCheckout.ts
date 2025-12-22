@@ -54,6 +54,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const client = new MercadoPagoConfig({ accessToken });
   const preference = new Preference(client);
 
+  // Garante que a URL base seja a de produção se a variável de ambiente não estiver definida.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://doce-sabor.onrender.com';
 
   const nameParts = userProfile.displayName?.split(' ') || [];
