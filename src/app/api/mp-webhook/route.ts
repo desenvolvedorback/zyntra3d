@@ -36,7 +36,11 @@ export async function POST(req: NextRequest) {
 
       if (paymentInfo && paymentInfo.status === 'approved') {
         const metadata = paymentInfo.metadata;
-        const items = paymentInfo.additional_info?.items || [];
+        const allItems = paymentInfo.additional_info?.items || [];
+        
+        // Filtra para remover a taxa de entrega da lista de itens
+        const productItems = allItems.filter((item: any) => item.id !== 'delivery_fee');
+
         const deliveryFee = metadata?.delivery_fee || 0;
         
         // Limpa o carrinho do usuário
@@ -56,13 +60,13 @@ export async function POST(req: NextRequest) {
         // Salva o novo pedido no Firestore
         await addDoc(collection(db, "orders"), {
           paymentId: paymentId,
-          status: 'paid',
+          status: 'paid', // O status é 'aprovado', então salvamos como 'paid'
           total: paymentInfo.transaction_amount,
-          items: items.map((item: any) => ({
+          items: productItems.map((item: any) => ({
             id: item.id,
             title: item.title,
             quantity: Number(item.quantity),
-            unit_price: Number(item.unit_price || item.price || 0), // CORREÇÃO: Usa 'unit_price' ou 'price'
+            unit_price: Number(item.unit_price || 0),
           })),
           customer: {
             id: metadata?.user_id,
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Erro no webhook do Mercado Pago:", error.message);
+    console.error("Erro no webhook do Mercado Pago:", error.message, error.cause);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
