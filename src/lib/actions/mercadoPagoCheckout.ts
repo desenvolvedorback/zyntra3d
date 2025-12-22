@@ -2,6 +2,8 @@
 
 import type { CartItem, UserProfile } from "@/lib/types";
 import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { db } from "@/lib/firebase";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
 interface MercadoPagoCheckoutArgs {
   items: CartItem[];
@@ -33,6 +35,30 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const cleanCpf = (cpf: string) => cpf.replace(/[^0-9]/g, "");
 
   try {
+    // 1. Criar o pedido no Firestore com status 'pending'
+    const orderPayload = {
+      status: 'pending',
+      total: items.reduce((sum, item) => sum + item.price * item.quantity, 0) + deliveryFee,
+      items: items.map(item => ({
+        id: item.productId,
+        title: item.name,
+        quantity: item.quantity,
+        unit_price: item.price,
+      })),
+      customer: {
+        id: userProfile.uid,
+        name: userProfile.displayName,
+        email: userProfile.email,
+      },
+      delivery: deliveryFee > 0,
+      deliveryFee: deliveryFee,
+      location: location,
+      createdAt: serverTimestamp(),
+      paymentId: null,
+    };
+    const orderRef = await addDoc(collection(db, "orders"), orderPayload);
+
+
     const preferenceItems = items.map((item) => ({
       id: item.productId,
       title: item.name,
@@ -40,6 +66,16 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       unit_price: item.price,
       currency_id: 'BRL',
     }));
+
+    if (deliveryFee > 0) {
+      preferenceItems.push({
+        id: 'delivery_fee',
+        title: 'Taxa de Entrega',
+        quantity: 1,
+        unit_price: deliveryFee,
+        currency_id: 'BRL',
+      });
+    }
 
     const preferenceBody: any = {
       items: preferenceItems,
@@ -63,26 +99,11 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       },
       auto_return: 'approved',
       notification_url: `${siteUrl}/api/mp-webhook`,
-      // Adicionando metadata para reconstruir o pedido no webhook
       metadata: {
-        user_id: userProfile.uid,
-        user_name: userProfile.displayName,
-        user_email: userProfile.email,
-        delivery_location: location,
-        delivery_fee: deliveryFee,
+        orderId: orderRef.id, // Inclui o ID do nosso pedido do Firestore
+        userId: userProfile.uid,
       },
     };
-
-    // Adiciona a taxa de entrega como um item separado
-    if (deliveryFee > 0) {
-      preferenceBody.items.push({
-        id: 'delivery_fee',
-        title: 'Taxa de Entrega',
-        quantity: 1,
-        unit_price: deliveryFee,
-        currency_id: 'BRL',
-      });
-    }
 
     const result = await preference.create({ body: preferenceBody });
     

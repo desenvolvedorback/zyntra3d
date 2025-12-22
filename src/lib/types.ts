@@ -38,7 +38,7 @@ export interface UserProfile {
 
 export interface Order {
   id?: string;
-  paymentId: string;
+  paymentId: string | null;
   items: {
     id: string;
     title: string;

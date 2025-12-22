@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
 
 export async function POST(req: NextRequest) {
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
@@ -15,37 +15,37 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    // A notificação de webhook do MP para pagamentos só envia o ID
     if (body.type === 'payment' && body.data && body.data.id) {
       const paymentId = body.data.id;
-
-      // Verificar se o pedido já foi processado para evitar duplicatas
-      const ordersRef = collection(db, "orders");
-      const q = query(ordersRef, where("paymentId", "==", paymentId));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        console.log(`Pedido ${paymentId} já processado. Ignorando.`);
-        return NextResponse.json({ success: true, message: "Pedido já existe." });
-      }
 
       const client = new MercadoPagoConfig({ accessToken });
       const payment = new Payment(client);
       
       const paymentInfo = await payment.get({ id: paymentId });
 
-      if (paymentInfo && paymentInfo.status === 'approved') {
-        const metadata = paymentInfo.metadata;
-        const allItems = paymentInfo.additional_info?.items || [];
-        
-        // Filtra para remover a taxa de entrega da lista de itens, usando o título como identificador
-        const productItems = allItems.filter((item: any) => item.title !== 'Taxa de Entrega');
+      // O metadata agora contém o ID do nosso pedido
+      const orderId = paymentInfo?.metadata?.order_id;
+      const userId = paymentInfo?.metadata?.user_id;
 
-        const deliveryFee = metadata?.delivery_fee || 0;
+      if (!orderId) {
+        console.error("Webhook recebido sem orderId nos metadados.");
+        return NextResponse.json({ success: false, message: "orderId não encontrado" }, { status: 400 });
+      }
+
+      const orderRef = doc(db, "orders", orderId);
+      const orderSnap = await getDoc(orderRef);
+
+      // Apenas atualiza se o pedido existir e o pagamento for aprovado
+      if (orderSnap.exists() && paymentInfo && paymentInfo.status === 'approved') {
         
-        // Limpa o carrinho do usuário
-        if (metadata?.user_id) {
-          const cartRef = collection(db, "carts", metadata.user_id, "items");
+        await updateDoc(orderRef, {
+          status: 'paid',
+          paymentId: paymentId,
+        });
+        
+        // Limpa o carrinho do usuário após a confirmação do pagamento
+        if (userId) {
+          const cartRef = collection(db, "carts", userId, "items");
           const cartSnapshot = await getDocs(cartRef);
           if (!cartSnapshot.empty) {
             const batch = writeBatch(db);
@@ -53,33 +53,11 @@ export async function POST(req: NextRequest) {
               batch.delete(doc.ref);
             });
             await batch.commit();
-            console.log(`Carrinho do usuário ${metadata.user_id} limpo.`);
+            console.log(`Carrinho do usuário ${userId} limpo.`);
           }
         }
         
-        // Salva o novo pedido no Firestore
-        await addDoc(collection(db, "orders"), {
-          paymentId: paymentId,
-          status: 'paid', // O status é 'aprovado', então salvamos como 'paid'
-          total: paymentInfo.transaction_amount,
-          items: productItems.map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            quantity: Number(item.quantity),
-            unit_price: Number(item.unit_price || 0),
-          })),
-          customer: {
-            id: metadata?.user_id,
-            name: metadata?.user_name,
-            email: metadata?.user_email,
-          },
-          delivery: deliveryFee > 0,
-          deliveryFee: deliveryFee,
-          location: metadata?.delivery_location || '',
-          createdAt: serverTimestamp(),
-        });
-        
-        console.log(`Pedido ${paymentId} aprovado e salvo com sucesso.`);
+        console.log(`Pedido ${orderId} atualizado para 'pago' com sucesso.`);
       }
     }
 
