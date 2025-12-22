@@ -5,7 +5,7 @@ import { useCart } from "@/hooks/useCart";
 import type { Product } from "@/lib/types";
 import { ShoppingCart, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+
 
 interface AddToCartButtonProps {
   product: Product;
@@ -14,7 +14,7 @@ interface AddToCartButtonProps {
 export function AddToCartButton({ product }: AddToCartButtonProps) {
   const { addToCart } = useCart();
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  
 
   const handleAddToCart = () => {
     setLoading(true);
@@ -26,16 +26,6 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
         imageUrl: product.imageUrl,
         stock: product.stock,
         category: product.category,
-      });
-      toast({
-        title: "Adicionado ao carrinho!",
-        description: `${product.name} está agora no seu carrinho.`,
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível adicionar o item ao carrinho.",
       });
     } finally {
       setLoading(false);

@@ -3,10 +3,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, getDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, collection, getDocs, writeBatch, runTransaction } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import nodemailer from 'nodemailer';
 import { revalidatePath } from 'next/cache';
+
+
+async function updateStock(order: Order) {
+  try {
+    await runTransaction(db, async (transaction) => {
+      for (const item of order.items) {
+        const productRef = doc(db, 'products', item.id);
+        const productDoc = await transaction.get(productRef);
+
+        if (!productDoc.exists()) {
+          throw new Error(`Produto com ID ${item.id} não encontrado.`);
+        }
+
+        const currentStock = productDoc.data().stock;
+        const newStock = currentStock - item.quantity;
+
+        if (newStock < 0) {
+          throw new Error(`Estoque insuficiente para o produto ${item.title}.`);
+        }
+
+        transaction.update(productRef, { stock: newStock });
+      }
+    });
+    console.log(`Estoque atualizado com sucesso para o pedido #${order.orderNumber}.`);
+    // Revalidar páginas de produtos após atualização de estoque
+    revalidatePath('/products');
+    revalidatePath('/');
+    order.items.forEach(item => {
+      revalidatePath(`/products/${item.id}`);
+    });
+
+  } catch (error: any) {
+    console.error(`Falha ao atualizar estoque para o pedido #${order.orderNumber}:`, error.message);
+    // TODO: Considerar lógica de notificação de falha (ex: enviar um e-mail para o admin)
+  }
+}
 
 // Função para enviar e-mail de notificação usando Nodemailer com Gmail
 async function sendOrderNotificationEmail(order: Order) {
@@ -118,10 +154,15 @@ export async function POST(req: NextRequest) {
           });
           
           const updatedOrderSnap = await getDoc(orderRef);
-          const updatedOrderData = updatedOrderSnap.data() as Order;
+          const updatedOrderData = { id: updatedOrderSnap.id, ...updatedOrderSnap.data() } as Order;
 
+          // 1. Atualiza o estoque
+          await updateStock(updatedOrderData);
+
+          // 2. Envia notificação por e-mail
           await sendOrderNotificationEmail(updatedOrderData);
-
+          
+          // 3. Limpa o carrinho do usuário
           if (userId) {
             const cartRef = collection(db, "carts", userId, "items");
             const cartSnapshot = await getDocs(cartRef);
@@ -134,7 +175,8 @@ export async function POST(req: NextRequest) {
               console.log(`Carrinho do usuário ${userId} limpo.`);
             }
           }
-
+          
+          // 4. Revalida as páginas do admin
           revalidatePath('/admin/orders');
           revalidatePath('/admin/dashboard');
           

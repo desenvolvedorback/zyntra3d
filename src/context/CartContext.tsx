@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
 import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch } from "firebase/firestore";
 import { createContext, useCallback, useEffect, useState, type ReactNode } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -32,6 +33,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const [delivery, setDelivery] = useState(false);
   const [location, setLocation] = useState("");
+  const { toast } = useToast();
   const deliveryFee = 10;
 
   const getLocalCart = useCallback((): CartItem[] => {
@@ -64,15 +66,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const batch = writeBatch(db);
 
-    localCart.forEach(localItem => {
-      const remoteItem = remoteItems.get(localItem.productId);
-      if (remoteItem) {
-        const newQuantity = remoteItem.quantity + localItem.quantity;
-        batch.update(doc(cartRef, localItem.productId), { quantity: newQuantity });
-      } else {
-        batch.set(doc(cartRef, localItem.productId), localItem);
-      }
-    });
+    for (const localItem of localCart) {
+        const productRef = doc(db, "products", localItem.productId);
+        const productSnap = await getDoc(productRef);
+        const stock = productSnap.data()?.stock ?? 0;
+
+        const remoteItem = remoteItems.get(localItem.productId);
+        let newQuantity = localItem.quantity;
+        if (remoteItem) {
+            newQuantity += remoteItem.quantity;
+        }
+
+        const finalQuantity = Math.min(newQuantity, stock);
+
+        if (finalQuantity > 0) {
+            const itemPayload = { ...localItem, quantity: finalQuantity };
+            if (remoteItem) {
+                batch.update(doc(cartRef, localItem.productId), { quantity: finalQuantity });
+            } else {
+                batch.set(doc(cartRef, localItem.productId), itemPayload);
+            }
+        }
+    }
 
     await batch.commit();
     if (typeof window !== 'undefined') {
@@ -108,46 +123,61 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 
   const addToCart = async (product: Omit<Product, 'description' | 'imageHint' | 'createdAt'>, quantity = 1) => {
-    if (product.stock === 0) return;
+    if (product.stock === 0) {
+      toast({ variant: "destructive", title: "Fora de Estoque", description: `${product.name} não está mais disponível.` });
+      return;
+    }
     
     if (user) {
       const itemRef = doc(db, "carts", user.uid, "items", product.id);
       const docSnap = await getDoc(itemRef);
-      if (docSnap.exists()) {
-        const existingItem = docSnap.data() as CartItem;
-        const newQuantity = existingItem.quantity + quantity;
-        await setDoc(itemRef, { quantity: newQuantity > product.stock ? product.stock : newQuantity }, { merge: true });
-      } else {
-        await setDoc(itemRef, {
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-          imageUrl: product.imageUrl,
-          quantity: quantity > product.stock ? product.stock : quantity
-        });
+      const existingQuantity = docSnap.exists() ? (docSnap.data() as CartItem).quantity : 0;
+      const newQuantity = existingQuantity + quantity;
+
+      if (newQuantity > product.stock) {
+        toast({ variant: "destructive", title: "Estoque Limitado", description: `Você só pode adicionar ${product.stock - existingQuantity} mais unidade(s) de ${product.name}.` });
+        return;
       }
-    } else {
+
+      await setDoc(itemRef, { 
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        imageUrl: product.imageUrl,
+        quantity: newQuantity 
+      }, { merge: true });
+
+    } else { // Local cart logic
       setCartItems(currentItems => {
-        const existingItemIndex = currentItems.findIndex(item => item.productId === product.id);
+        const existingItem = currentItems.find(item => item.productId === product.id);
+        const existingQuantity = existingItem ? existingItem.quantity : 0;
+        const newQuantity = existingQuantity + quantity;
+
+        if (newQuantity > product.stock) {
+          toast({ variant: "destructive", title: "Estoque Limitado", description: `Você só pode adicionar ${product.stock - existingQuantity} mais unidade(s) de ${product.name}.` });
+          return currentItems; // Do not update cart
+        }
+
         let newCart: CartItem[];
-        if (existingItemIndex > -1) {
-            newCart = [...currentItems];
-            const existingItem = newCart[existingItemIndex];
-            const newQuantity = existingItem.quantity + quantity;
-            existingItem.quantity = newQuantity > product.stock ? product.stock : newQuantity;
+        if (existingItem) {
+            newCart = currentItems.map(item => item.productId === product.id ? {...item, quantity: newQuantity} : item);
         } else {
             newCart = [...currentItems, {
                 productId: product.id,
                 name: product.name,
                 price: product.price,
                 imageUrl: product.imageUrl,
-                quantity: quantity > product.stock ? product.stock : quantity,
+                quantity: quantity,
             }];
         }
         setLocalCart(newCart);
         return newCart;
       });
     }
+      toast({
+        title: "Adicionado ao carrinho!",
+        description: `${product.name} está agora no seu carrinho.`,
+      });
   };
 
   const removeFromCart = async (productId: string) => {
@@ -169,6 +199,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const productDoc = await getDoc(doc(db, "products", productId));
     const productStock = productDoc.data()?.stock ?? 0;
     const newQuantity = quantity > productStock ? productStock : quantity;
+
+    if (quantity > productStock) {
+        toast({
+            variant: "destructive",
+            title: "Estoque Insuficiente",
+            description: `Apenas ${productStock} unidades disponíveis.`,
+        });
+    }
 
     if (user) {
       await setDoc(doc(db, "carts", user.uid, "items", productId), { quantity: newQuantity }, { merge: true });
