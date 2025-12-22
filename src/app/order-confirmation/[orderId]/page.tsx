@@ -4,7 +4,7 @@ import type { Order } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, MessageCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,6 +41,11 @@ export default async function OrderConfirmationPage({ params }: { params: { orde
 
   const statusText = order.status === 'paid' ? 'Pagamento Aprovado' : 'Pagamento Pendente';
   const statusVariant = order.status === 'paid' ? 'secondary' : 'outline';
+
+  const phoneNumber = "5514998561335";
+  const message = `Olá! Gostaria de confirmar meu pedido.\n\n*Nº do Pedido:* ${order.orderNumber}\n*Cliente:* ${order.customer?.name}\n*E-mail:* ${order.customer?.email}\n*Valor Total:* R$ ${order.total.toFixed(2)}\n\nObrigado(a)!`;
+  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
 
   return (
     <div className="container mx-auto max-w-2xl py-12 md:py-20">
@@ -111,9 +116,22 @@ export default async function OrderConfirmationPage({ params }: { params: { orde
                    <p>Atualizaremos o status assim que o pagamento for confirmado. Você pode fechar esta página.</p>
                 </div>
             )}
+
+            <Separator className="my-6" />
+
+            <div className="text-center space-y-4">
+                <p className="font-semibold text-lg text-primary">Confirme seu pedido!</p>
+                <p className="text-muted-foreground">Para agilizar, envie o comprovante para a loja pelo WhatsApp. Assim, seu pedido será preparado mais rapidamente!</p>
+                <Button asChild size="lg" className="bg-green-600 hover:bg-green-700 text-white w-full max-w-sm mx-auto">
+                    <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                        <MessageCircle className="mr-2" />
+                        Enviar Comprovante por WhatsApp
+                    </Link>
+                </Button>
+            </div>
         </CardContent>
         <CardFooter className="p-6">
-            <Button asChild className="w-full">
+            <Button asChild className="w-full" variant="outline">
                 <Link href="/products">Continuar Comprando</Link>
             </Button>
         </CardFooter>

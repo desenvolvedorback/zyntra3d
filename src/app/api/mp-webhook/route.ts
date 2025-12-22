@@ -5,25 +5,28 @@ import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, getDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
-import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 import { revalidatePath } from 'next/cache';
 
-// Função para enviar e-mail de notificação
+// Função para enviar e-mail de notificação usando Nodemailer com Gmail
 async function sendOrderNotificationEmail(order: Order) {
-  const apiKey = process.env.SENDGRID_API_KEY;
+  const senderEmail = process.env.GMAIL_SENDER_EMAIL;
+  const appPassword = process.env.GMAIL_APP_PASSWORD;
   const toEmail = process.env.ADMIN_EMAIL_RECIPIENT;
-  const fromEmail = "davileonardomaxel346@gmail.com";
 
-  if (!apiKey) {
-    console.error("SENDGRID_API_KEY não configurada. Pulando envio de e-mail.");
-    return;
-  }
-  if (!toEmail || !fromEmail) {
-    console.error("E-mail de destinatário ou remetente não configurado. Pulando envio de e-mail.");
+  if (!senderEmail || !appPassword || !toEmail) {
+    console.error("Credenciais do Gmail ou e-mail do destinatário não configurados. Pulando envio de e-mail.");
     return;
   }
 
-  sgMail.setApiKey(apiKey);
+  // Configura o "transportador" do Nodemailer para usar o Gmail
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: senderEmail,
+      pass: appPassword,
+    },
+  });
 
   const itemsHtml = order.items.map(item => `
     <tr>
@@ -33,9 +36,9 @@ async function sendOrderNotificationEmail(order: Order) {
     </tr>
   `).join('');
 
-  const msg = {
+  const mailOptions = {
+    from: `"Doce Sabor" <${senderEmail}>`,
     to: toEmail,
-    from: fromEmail, 
     subject: `🎉 Novo Pedido Recebido! #${order.orderNumber}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
@@ -68,10 +71,10 @@ async function sendOrderNotificationEmail(order: Order) {
   };
 
   try {
-    await sgMail.send(msg);
+    await transporter.sendMail(mailOptions);
     console.log(`E-mail de notificação enviado com sucesso para ${toEmail}`);
   } catch (error: any) {
-    console.error('Erro detalhado ao enviar e-mail pelo SendGrid:', JSON.stringify(error, null, 2));
+    console.error('Erro detalhado ao enviar e-mail pelo Nodemailer:', error);
   }
 }
 
@@ -108,21 +111,17 @@ export async function POST(req: NextRequest) {
       if (orderSnap.exists() && paymentInfo && paymentInfo.status === 'approved') {
         const orderData = orderSnap.data() as Order;
         
-        // Apenas atualiza se o status for 'pending' para evitar duplicidade
         if (orderData.status === 'pending') {
           await updateDoc(orderRef, {
             status: 'paid',
             paymentId: paymentId,
           });
           
-          // Busca os dados atualizados para enviar no e-mail
           const updatedOrderSnap = await getDoc(orderRef);
           const updatedOrderData = updatedOrderSnap.data() as Order;
 
-          // Envia o e-mail ANTES de revalidar o path
           await sendOrderNotificationEmail(updatedOrderData);
 
-          // Limpa o carrinho do usuário após a confirmação do pagamento
           if (userId) {
             const cartRef = collection(db, "carts", userId, "items");
             const cartSnapshot = await getDocs(cartRef);
@@ -136,7 +135,6 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Revalida o cache das páginas do admin
           revalidatePath('/admin/orders');
           revalidatePath('/admin/dashboard');
           
