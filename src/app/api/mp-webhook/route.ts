@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
         const metadata = paymentInfo.metadata;
         const allItems = paymentInfo.additional_info?.items || [];
         
-        // Filtra para remover a taxa de entrega da lista de itens
-        const productItems = allItems.filter((item: any) => item.id !== 'delivery_fee');
+        // Filtra para remover a taxa de entrega da lista de itens, usando o título como identificador
+        const productItems = allItems.filter((item: any) => item.title !== 'Taxa de Entrega');
 
         const deliveryFee = metadata?.delivery_fee || 0;
         
