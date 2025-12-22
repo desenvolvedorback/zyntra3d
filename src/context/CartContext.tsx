@@ -88,10 +88,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setDeliveryPromotion(null);
       }
     };
-    fetchDeliveryPromo();
-    
-    // Also listen for real-time updates on promotions
-    const unsubscribe = onSnapshot(collection(db, "promotions"), (snapshot) => {
+
+    const promoCollectionRef = collection(db, "promotions");
+    const unsubscribe = onSnapshot(promoCollectionRef, (snapshot) => {
+        // Re-fetch when any promotion changes
         fetchDeliveryPromo();
     });
 
@@ -158,7 +158,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             
             const [productsSnapshot, promotionsSnapshot] = await Promise.all([
               getDocs(productsQuery),
-              getDocs(promotionsSnapshot)
+              getDocs(promotionsQuery)
             ]);
 
             const productsData = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
@@ -346,4 +346,5 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
+    
     
