@@ -1,9 +1,10 @@
+
 "use client";
 
 import type { Product, CartItem, Promotion } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
-import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch, query, where, orderBy, limit } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch, query, where, orderBy } from "firebase/firestore";
 import { createContext, useCallback, useEffect, useState, type ReactNode } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { applyPromotions } from "@/lib/promotions";
@@ -63,18 +64,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Fetch delivery promotion
   useEffect(() => {
     const fetchDeliveryPromo = async () => {
+      // Simplified query to avoid composite index requirement
       const promoQuery = query(
         collection(db, "promotions"), 
         where("isActive", "==", true), 
-        where("type", "==", "delivery"),
-        orderBy("createdAt", "desc"), // Get the latest active promo
-        limit(1)
+        where("type", "==", "delivery")
       );
-      const promoSnapshot = await getDocs(promoQuery);
-      if (!promoSnapshot.empty) {
-        const promo = promoSnapshot.docs[0].data() as Promotion;
-        setDeliveryPromotion(promo);
-      } else {
+      try {
+        const promoSnapshot = await getDocs(promoQuery);
+        if (!promoSnapshot.empty) {
+          // Sort by date client-side to get the most recent one
+          const promos = promoSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt.toDate() } as Promotion))
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+          
+          setDeliveryPromotion(promos[0]);
+        } else {
+          setDeliveryPromotion(null);
+        }
+      } catch (error) {
+        console.error("Error fetching delivery promotions:", error);
+        // Set to null to allow cart to load even if promo query fails
         setDeliveryPromotion(null);
       }
     };
@@ -335,3 +345,5 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
+
+    
