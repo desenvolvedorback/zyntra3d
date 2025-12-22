@@ -3,7 +3,7 @@
 import type { Product, CartItem, Promotion } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase";
-import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch, query, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch, query, where, orderBy, limit } from "firebase/firestore";
 import { createContext, useCallback, useEffect, useState, type ReactNode } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { applyPromotions } from "@/lib/promotions";
@@ -22,6 +22,7 @@ interface CartContextType {
   location: string;
   setLocation: React.Dispatch<React.SetStateAction<string>>;
   deliveryFee: number;
+  finalDeliveryFee: number;
   deliveryPromotion: Promotion | null;
 }
 
@@ -65,21 +66,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const promoQuery = query(
         collection(db, "promotions"), 
         where("isActive", "==", true), 
-        where("type", "==", "delivery")
+        where("type", "==", "delivery"),
+        orderBy("createdAt", "desc"), // Get the latest active promo
+        limit(1)
       );
       const promoSnapshot = await getDocs(promoQuery);
       if (!promoSnapshot.empty) {
         const promo = promoSnapshot.docs[0].data() as Promotion;
-        if (promo.discountType === 'fixed' && promo.discountValue >= deliveryFee) {
-          setDeliveryPromotion(promo);
-        } else if (promo.discountType === 'percentage' && promo.discountValue >= 100) {
-          setDeliveryPromotion(promo);
-        }
+        setDeliveryPromotion(promo);
       } else {
         setDeliveryPromotion(null);
       }
     };
     fetchDeliveryPromo();
+    
+    // Also listen for real-time updates on promotions
+    const unsubscribe = onSnapshot(collection(db, "promotions"), (snapshot) => {
+        fetchDeliveryPromo();
+    });
+
+    return () => unsubscribe();
+
   }, []);
 
   const mergeAndClearLocalCart = useCallback(async (userId: string) => {
@@ -141,7 +148,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             
             const [productsSnapshot, promotionsSnapshot] = await Promise.all([
               getDocs(productsQuery),
-              getDocs(promotionsQuery)
+              getDocs(promotionsSnapshot)
             ]);
 
             const productsData = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
@@ -298,6 +305,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  let finalDeliveryFee = deliveryFee;
+  if (delivery && deliveryPromotion) {
+    if (deliveryPromotion.discountType === 'fixed') {
+      finalDeliveryFee = Math.max(0, deliveryFee - deliveryPromotion.discountValue);
+    } else if (deliveryPromotion.discountType === 'percentage') {
+      finalDeliveryFee = deliveryFee * (1 - deliveryPromotion.discountValue / 100);
+    }
+  }
+
+
   const value = {
     cartItems,
     addToCart,
@@ -312,6 +329,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     location,
     setLocation,
     deliveryFee,
+    finalDeliveryFee,
     deliveryPromotion,
   };
 

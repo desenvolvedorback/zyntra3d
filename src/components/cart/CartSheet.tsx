@@ -37,6 +37,7 @@ export function CartSheet() {
     location,
     setLocation,
     deliveryFee,
+    finalDeliveryFee,
     deliveryPromotion,
   } = useCart();
 
@@ -55,8 +56,8 @@ export function CartSheet() {
     setIsClient(true);
   }, []);
 
-  const finalDeliveryFee = deliveryPromotion ? 0 : deliveryFee;
   const finalPrice = delivery ? totalPrice + finalDeliveryFee : totalPrice;
+  const isDeliveryFree = deliveryPromotion && finalDeliveryFee === 0;
 
   const handleCheckout = () => {
     if (!user || !userProfile) {
@@ -170,12 +171,12 @@ export function CartSheet() {
                       <span>Adicionar entrega</span>
                        {deliveryPromotion && (
                          <span className="font-normal text-red-600 text-xs flex items-center gap-1">
-                           <Tag className="h-3 w-3"/> GRÁTIS HOJE!
+                           <Tag className="h-3 w-3"/> PROMOÇÃO ATIVA!
                          </span>
                        )}
-                      <span className="font-normal text-muted-foreground text-xs">
-                        Taxa padrão: R$ {deliveryFee.toFixed(2)}
-                      </span>
+                       <span className="font-normal text-muted-foreground text-xs">
+                         Taxa padrão: R$ {deliveryFee.toFixed(2)}
+                       </span>
                     </Label>
                     <Switch
                       id="delivery-switch"
@@ -208,11 +209,14 @@ export function CartSheet() {
                   {delivery && (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Taxa de Entrega</span>
-                      {deliveryPromotion ? (
-                         <span className="font-bold text-red-600">GRÁTIS</span>
-                      ) : (
+                       {deliveryPromotion ? (
+                         <div className="flex items-baseline gap-2">
+                           <span className="text-red-600 font-bold">R$ {finalDeliveryFee.toFixed(2)}</span>
+                           <span className="text-muted-foreground line-through text-xs">R$ {deliveryFee.toFixed(2)}</span>
+                         </div>
+                       ) : (
                          <span>R$ {deliveryFee.toFixed(2)}</span>
-                      )}
+                       )}
                     </div>
                   )}
 
