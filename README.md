@@ -9,3 +9,5 @@ versão atualizada do carrinho
 teste do pagamento 3
 
 com comprovante de pagamento
+
+e promoção e arrumei o horario e tbm com seleção das statisticas
