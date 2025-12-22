@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { doc, updateDoc, getDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import sgMail from '@sendgrid/mail';
+import { revalidatePath } from 'next/cache';
 
 // Função para enviar e-mail de notificação
 async function sendOrderNotificationEmail(order: Order) {
@@ -128,6 +129,10 @@ export async function POST(req: NextRequest) {
               console.log(`Carrinho do usuário ${userId} limpo.`);
             }
           }
+
+          // Revalida o cache da página de pedidos do admin
+          revalidatePath('/admin/orders');
+          revalidatePath('/admin/dashboard');
           
           console.log(`Pedido ${orderId} atualizado para 'pago' com sucesso.`);
         }
