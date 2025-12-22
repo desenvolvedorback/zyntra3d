@@ -66,10 +66,10 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const cleanCpf = (cpf: string) => cpf.replace(/[^0-9]/g, "");
 
   try {
-    // 1. Gerar o número do pedido
     const orderNumber = await getNextOrderNumber();
     
-    // 2. Criar o pedido no Firestore com status 'pending'
+    const orderRef = doc(collection(db, "orders"));
+
     const orderPayload = {
       orderNumber,
       status: 'pending' as const,
@@ -91,10 +91,8 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       createdAt: serverTimestamp(),
       paymentId: null,
     };
-    const orderRef = doc(collection(db, "orders"));
     await setDoc(orderRef, orderPayload);
     
-    // 3. Criar preferência de pagamento do Mercado Pago
     const preferenceItems = items.map((item) => ({
       id: item.productId,
       title: item.name,
@@ -129,9 +127,9 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         },
       },
       back_urls: {
-        success: `${siteUrl}/`,
-        failure: `${siteUrl}/`,
-        pending: `${siteUrl}/`,
+        success: `${siteUrl}/order-confirmation/${orderRef.id}`,
+        failure: `${siteUrl}/products`,
+        pending: `${siteUrl}/order-confirmation/${orderRef.id}`,
       },
       auto_return: 'approved',
       notification_url: `${siteUrl}/api/mp-webhook`,
