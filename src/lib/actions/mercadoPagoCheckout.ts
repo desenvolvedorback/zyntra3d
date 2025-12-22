@@ -7,10 +7,11 @@ interface MercadoPagoCheckoutArgs {
   items: CartItem[];
   userProfile: UserProfile;
   deliveryFee: number;
+  location: string;
 }
 
 export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promise<string | null> {
-  const { items, userProfile, deliveryFee } = args;
+  const { items, userProfile, deliveryFee, location } = args;
 
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!accessToken) {
@@ -22,7 +23,6 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9003';
 
-  // Formata o nome para ter nome e sobrenome
   const nameParts = userProfile.displayName?.split(' ') || [];
   const firstName = nameParts[0] || '';
   const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'N/A';
@@ -41,9 +41,42 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       currency_id: 'BRL',
     }));
 
+    const preferenceBody: any = {
+      items: preferenceItems,
+      payer: {
+        name: firstName,
+        surname: lastName,
+        email: userProfile.email || '',
+        phone: {
+          area_code: areaCode,
+          number: phoneNumber,
+        },
+        identification: {
+          type: 'CPF',
+          number: cleanCpf(userProfile.cpf),
+        },
+      },
+      back_urls: {
+        success: `${siteUrl}/`,
+        failure: `${siteUrl}/`,
+        pending: `${siteUrl}/`,
+      },
+      auto_return: 'approved',
+      notification_url: `${siteUrl}/api/mp-webhook`,
+      // Adicionando metadata para reconstruir o pedido no webhook
+      metadata: {
+        user_id: userProfile.uid,
+        user_name: userProfile.displayName,
+        user_email: userProfile.email,
+        delivery_location: location,
+        delivery_fee: deliveryFee,
+      },
+    };
+
+    // Adiciona a taxa de entrega como um item separado
     if (deliveryFee > 0) {
-      preferenceItems.push({
-        id: 'delivery',
+      preferenceBody.items.push({
+        id: 'delivery_fee',
         title: 'Taxa de Entrega',
         quantity: 1,
         unit_price: deliveryFee,
@@ -51,34 +84,8 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       });
     }
 
-    const result = await preference.create({
-      body: {
-        items: preferenceItems,
-        payer: {
-          name: firstName,
-          surname: lastName,
-          email: userProfile.email || '',
-          phone: {
-            area_code: areaCode,
-            number: phoneNumber,
-          },
-          identification: {
-            type: 'CPF',
-            number: cleanCpf(userProfile.cpf),
-          },
-        },
-        back_urls: {
-          success: `${siteUrl}/`,
-          failure: `${siteUrl}/`,
-          pending: `${siteUrl}/`,
-        },
-        auto_return: 'approved',
-        notification_url: `${siteUrl}/api/mp-webhook`,
-      },
-    });
+    const result = await preference.create({ body: preferenceBody });
     
-    // Para produção, use 'result.init_point'. Para sandbox, 'result.sandbox_init_point'.
-    // Vamos retornar o init_point que geralmente funciona para ambos os casos se a conta estiver configurada.
     return result.init_point || null;
 
   } catch (error: any) {

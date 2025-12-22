@@ -92,6 +92,7 @@ export function CartSheet() {
           items: cartItems,
           userProfile,
           deliveryFee: delivery ? deliveryFee : 0,
+          location: delivery ? location : "",
         });
 
         if (checkoutUrl) {

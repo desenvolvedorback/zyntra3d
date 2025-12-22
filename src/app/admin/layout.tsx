@@ -3,13 +3,14 @@ import { AdminGuard } from "@/components/auth/AdminGuard";
 import { Logo } from "@/components/shared/Logo";
 import { UserNav } from "@/components/auth/UserNav";
 import { Button } from "@/components/ui/button";
-import { Menu, Newspaper, Package, PanelsTopLeft, X } from "lucide-react";
+import { Menu, Newspaper, Package, PanelsTopLeft, ShoppingCart, X } from "lucide-react";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 function AdminHeader() {
   const navItems = [
     { href: "/admin/dashboard", label: "Painel", icon: PanelsTopLeft },
     { href: "/admin/products", label: "Produtos", icon: Package },
+    { href: "/admin/orders", label: "Pedidos", icon: ShoppingCart },
     { href: "/admin/news", label: "Notícias", icon: Newspaper },
   ];
 

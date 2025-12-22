@@ -38,12 +38,12 @@ export interface UserProfile {
 
 export interface Order {
   id?: string;
-  referenceId: string;
+  paymentId: string;
   items: {
-    productId: string;
-    name: string;
+    id: string;
+    title: string;
     quantity: number;
-    price: number;
+    unit_price: number;
   }[];
   total: number;
   delivery: boolean;
@@ -52,6 +52,7 @@ export interface Order {
   status: 'pending' | 'paid' | 'cancelled';
   createdAt: Date;
   customer?: {
+    id: string;
     name: string;
     email: string;
   };
