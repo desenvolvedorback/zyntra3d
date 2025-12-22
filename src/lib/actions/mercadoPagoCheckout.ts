@@ -54,7 +54,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const client = new MercadoPagoConfig({ accessToken });
   const preference = new Preference(client);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9003';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://doce-sabor.onrender.com';
 
   const nameParts = userProfile.displayName?.split(' ') || [];
   const firstName = nameParts[0] || '';
