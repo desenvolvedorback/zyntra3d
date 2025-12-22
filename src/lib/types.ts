@@ -38,6 +38,7 @@ export interface UserProfile {
 
 export interface Order {
   id?: string;
+  orderNumber: number;
   paymentId: string | null;
   items: {
     id: string;
@@ -63,3 +64,4 @@ export type ProfileUpdateData = {
   cpf: string;
   phone: string;
 };
+```

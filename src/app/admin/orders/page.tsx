@@ -42,6 +42,7 @@ export default async function OrdersPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[100px]">Pedido</TableHead>
                 <TableHead className="w-[180px]">Data</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead className="text-center w-[120px]">Status</TableHead>
@@ -56,6 +57,7 @@ export default async function OrdersPage() {
                 <AccordionItem value={order.id!} key={order.id}>
                    <AccordionTrigger className="px-4 text-sm hover:no-underline">
                      <div className="flex w-full items-center">
+                        <div className="w-[100px] text-left font-semibold text-primary">#{order.orderNumber}</div>
                         <div className="w-[180px] text-left">{format(order.createdAt, "d MMM, yyyy 'às' HH:mm", { locale: ptBR })}</div>
                         <div className="flex-1 text-left font-medium">{order.customer?.name || 'N/A'}</div>
                         <div className="w-[120px] flex justify-center">
@@ -82,7 +84,7 @@ export default async function OrdersPage() {
                             )}
                             <div>
                                 <p className="text-muted-foreground">ID do Pagamento (MP)</p>
-                                <p>{order.paymentId}</p>
+                                <p>{order.paymentId || 'N/A'}</p>
                             </div>
                         </div>
 
@@ -119,3 +121,4 @@ export default async function OrdersPage() {
     </div>
   );
 }
+```

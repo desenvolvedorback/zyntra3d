@@ -3,7 +3,7 @@
 import type { CartItem, UserProfile } from "@/lib/types";
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { db } from "@/lib/firebase";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { collection, doc, runTransaction, serverTimestamp } from "firebase/firestore";
 
 interface MercadoPagoCheckoutArgs {
   items: CartItem[];
@@ -11,6 +11,37 @@ interface MercadoPagoCheckoutArgs {
   deliveryFee: number;
   location: string;
 }
+
+// Função para gerar o próximo número de pedido
+async function getNextOrderNumber(): Promise<number> {
+  const counterRef = doc(db, "counters", "orderCounter");
+
+  try {
+    const newOrderNumber = await runTransaction(db, async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+      
+      let nextNumber;
+      if (!counterDoc.exists()) {
+        // Se o contador não existir, começa em 1001 e o cria.
+        nextNumber = 1001;
+        transaction.set(counterRef, { lastNumber: nextNumber });
+      } else {
+        // Se existir, incrementa o número atual.
+        const lastNumber = counterDoc.data().lastNumber || 1000;
+        nextNumber = lastNumber + 1;
+        transaction.update(counterRef, { lastNumber: nextNumber });
+      }
+      
+      return nextNumber;
+    });
+    return newOrderNumber;
+  } catch (error) {
+    console.error("Error in transaction for order number generation: ", error);
+    // Fallback: usar um timestamp se a transação falhar.
+    return Date.now();
+  }
+}
+
 
 export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promise<string | null> {
   const { items, userProfile, deliveryFee, location } = args;
@@ -35,8 +66,13 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const cleanCpf = (cpf: string) => cpf.replace(/[^0-9]/g, "");
 
   try {
+    // 1. Gerar o número do pedido
+    const orderNumber = await getNextOrderNumber();
+    
+    // 2. Criar o pedido no Firestore com status 'pending'
     const orderPayload = {
-      status: 'pending',
+      orderNumber,
+      status: 'pending' as const,
       total: items.reduce((sum, item) => sum + item.price * item.quantity, 0) + deliveryFee,
       items: items.map(item => ({
         id: item.productId,
@@ -55,8 +91,10 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       createdAt: serverTimestamp(),
       paymentId: null,
     };
-    const orderRef = await addDoc(collection(db, "orders"), orderPayload);
-
+    const orderRef = doc(collection(db, "orders"));
+    await setDoc(orderRef, orderPayload);
+    
+    // 3. Criar preferência de pagamento do Mercado Pago
     const preferenceItems = items.map((item) => ({
       id: item.productId,
       title: item.name,
@@ -112,3 +150,4 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     throw new Error("Falha ao iniciar o processo de pagamento.");
   }
 }
+```

@@ -4,6 +4,71 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, getDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import type { Order } from '@/lib/types';
+import sgMail from '@sendgrid/mail';
+
+// Função para enviar e-mail de notificação
+async function sendOrderNotificationEmail(order: Order) {
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const adminEmail = process.env.ADMIN_EMAIL_RECIPIENT;
+
+  if (!apiKey || !adminEmail) {
+    console.warn("SendGrid API Key ou e-mail do admin não configurado. Pulando envio de e-mail.");
+    return;
+  }
+
+  sgMail.setApiKey(apiKey);
+
+  const itemsHtml = order.items.map(item => `
+    <tr>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.title}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">R$ ${item.unit_price.toFixed(2)}</td>
+    </tr>
+  `).join('');
+
+  const msg = {
+    to: adminEmail,
+    from: 'notificacao@docesabor.com', // Use um e-mail de um domínio que você controla
+    subject: `🎉 Novo Pedido Recebido! #${order.orderNumber}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+        <h1 style="color: #333;">🎉 Novo Pedido Recebido! #${order.orderNumber}</h1>
+        <p>Um novo pedido foi pago e confirmado na sua loja Doce Sabor.</p>
+        
+        <h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; color: #555;">Detalhes do Pedido</h2>
+        <p><strong>Cliente:</strong> ${order.customer?.name || 'N/A'}</p>
+        <p><strong>E-mail:</strong> ${order.customer?.email || 'N/A'}</p>
+        ${order.delivery ? `<p><strong>Endereço de Entrega:</strong> ${order.location}</p>` : ''}
+        
+        <h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; color: #555;">Itens do Pedido</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: left;">Produto</th>
+              <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: center;">Qtd.</th>
+              <th style="padding: 8px; border-bottom: 2px solid #ddd; text-align: right;">Preço</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+
+        <h3 style="text-align: right; margin-top: 20px; color: #333;">Total: R$ ${order.total.toFixed(2)}</h3>
+        <p style="font-size: 12px; color: #777; margin-top: 30px;">ID do Pagamento (Mercado Pago): ${order.paymentId}</p>
+      </div>
+    `,
+  };
+
+  try {
+    await sgMail.send(msg);
+    console.log(`E-mail de notificação enviado para ${adminEmail}`);
+  } catch (error) {
+    console.error('Erro ao enviar e-mail pelo SendGrid:', error);
+  }
+}
+
 
 export async function POST(req: NextRequest) {
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
@@ -23,7 +88,6 @@ export async function POST(req: NextRequest) {
       
       const paymentInfo = await payment.get({ id: paymentId });
 
-      // O metadata agora contém o ID do nosso pedido
       const orderId = paymentInfo?.metadata?.order_id;
       const userId = paymentInfo?.metadata?.user_id;
 
@@ -35,29 +99,35 @@ export async function POST(req: NextRequest) {
       const orderRef = doc(db, "orders", orderId);
       const orderSnap = await getDoc(orderRef);
 
-      // Apenas atualiza se o pedido existir e o pagamento for aprovado
       if (orderSnap.exists() && paymentInfo && paymentInfo.status === 'approved') {
+        const orderData = orderSnap.data() as Order;
         
-        await updateDoc(orderRef, {
-          status: 'paid',
-          paymentId: paymentId,
-        });
-        
-        // Limpa o carrinho do usuário após a confirmação do pagamento
-        if (userId) {
-          const cartRef = collection(db, "carts", userId, "items");
-          const cartSnapshot = await getDocs(cartRef);
-          if (!cartSnapshot.empty) {
-            const batch = writeBatch(db);
-            cartSnapshot.forEach(doc => {
-              batch.delete(doc.ref);
-            });
-            await batch.commit();
-            console.log(`Carrinho do usuário ${userId} limpo.`);
+        // Apenas atualiza se o status for 'pending' para evitar duplicidade
+        if (orderData.status === 'pending') {
+          await updateDoc(orderRef, {
+            status: 'paid',
+            paymentId: paymentId,
+          });
+          
+          const updatedOrderData: Order = { ...orderData, status: 'paid', paymentId };
+          await sendOrderNotificationEmail(updatedOrderData);
+
+          // Limpa o carrinho do usuário após a confirmação do pagamento
+          if (userId) {
+            const cartRef = collection(db, "carts", userId, "items");
+            const cartSnapshot = await getDocs(cartRef);
+            if (!cartSnapshot.empty) {
+              const batch = writeBatch(db);
+              cartSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+              });
+              await batch.commit();
+              console.log(`Carrinho do usuário ${userId} limpo.`);
+            }
           }
+          
+          console.log(`Pedido ${orderId} atualizado para 'pago' com sucesso.`);
         }
-        
-        console.log(`Pedido ${orderId} atualizado para 'pago' com sucesso.`);
       }
     }
 
@@ -67,3 +137,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+```
