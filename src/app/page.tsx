@@ -7,7 +7,8 @@ import { collection, getDocs, limit, orderBy, query, where } from "firebase/fire
 import { db } from "@/lib/firebase";
 import type { News, Product, Promotion } from "@/lib/types";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
-import { format } from "date-fns";
+import { formatInTimeZone } from 'date-fns-tz';
+import { ptBR } from "date-fns/locale";
 import { applyPromotions } from "@/lib/promotions";
 
 async function getFeaturedProducts() {
@@ -63,6 +64,7 @@ export default async function HomePage() {
   const heroImage = PlaceHolderImages.find(p => p.id === 'logo');
   const featuredProducts = await getFeaturedProducts();
   const latestNews = await getLatestNews();
+  const timeZone = 'America/Sao_Paulo';
 
   return (
     <div className="flex flex-col">
@@ -174,7 +176,7 @@ export default async function HomePage() {
                        </div>
                      </CardHeader>
                      <CardContent className="p-6">
-                       <p className="text-sm text-muted-foreground">{format(article.createdAt as Date, 'd \'de\' MMMM, yyyy')}</p>
+                       <p className="text-sm text-muted-foreground">{formatInTimeZone(article.createdAt, timeZone, "d 'de' MMMM, yyyy", { locale: ptBR })}</p>
                        <CardTitle className="font-headline text-xl text-primary mt-2">{article.title}</CardTitle>
                        <p className="mt-2 text-muted-foreground line-clamp-3">{article.content}</p>
                      </CardContent>

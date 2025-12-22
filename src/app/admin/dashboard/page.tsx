@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { Newspaper, Package, ShoppingCart } from "lucide-react";
 import { AdminWelcome } from "@/components/admin/AdminWelcome";
 import { useEffect, useState, useMemo } from "react";
@@ -24,6 +24,16 @@ async function getStats(period: Period): Promise<Stats> {
     const productsSnapshot = await getDocs(collection(db, "products"));
     const newsSnapshot = await getDocs(collection(db, "news"));
     
+    // Simplificamos a consulta para buscar todos os pedidos pagos, e depois filtramos por data no cliente.
+    // Isso evita a necessidade de um índice composto complexo no Firestore.
+    const paidOrdersQuery = query(collection(db, "orders"), where("status", "==", "paid"));
+    const allPaidOrdersSnapshot = await getDocs(paidOrdersQuery);
+    
+    const allPaidOrders = allPaidOrdersSnapshot.docs.map(doc => ({
+      ...doc.data(),
+      createdAt: doc.data().createdAt.toDate(), // Converte para objeto Date
+    }));
+
     const now = new Date();
     let startDate: Date | null = null;
     let endDate: Date | null = null;
@@ -46,21 +56,19 @@ async function getStats(period: Period): Promise<Stats> {
         break;
     }
 
-    let ordersQuery = query(collection(db, "orders"), where("status", "==", "paid"));
-
-    if (startDate) {
-        ordersQuery = query(ordersQuery, where("createdAt", ">=", startDate));
-    }
-    if (endDate) {
-        ordersQuery = query(ordersQuery, where("createdAt", "<=", endDate));
-    }
-
-    const ordersSnapshot = await getDocs(ordersQuery);
+    const filteredOrders = allPaidOrders.filter(order => {
+        if (!startDate) return true; // Para 'all_time'
+        const orderDate = order.createdAt;
+        if (endDate) {
+            return orderDate >= startDate && orderDate <= endDate;
+        }
+        return orderDate >= startDate;
+    });
 
     const productCount = productsSnapshot.size;
     const newsCount = newsSnapshot.size;
-    const orderCount = ordersSnapshot.size;
-    const totalRevenue = ordersSnapshot.docs.reduce((sum, doc) => sum + doc.data().total, 0);
+    const orderCount = filteredOrders.length;
+    const totalRevenue = filteredOrders.reduce((sum, doc) => sum + doc.total, 0);
 
     return { productCount, newsCount, orderCount, totalRevenue };
   } catch (error) {

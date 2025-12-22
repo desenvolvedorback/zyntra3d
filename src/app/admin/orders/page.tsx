@@ -4,7 +4,7 @@ import type { Order } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { formatInTimeZone } from 'date-fns-tz';
 import { ptBR } from "date-fns/locale";
 import {
   Accordion,
@@ -31,6 +31,7 @@ async function getOrders(): Promise<Order[]> {
 
 export default async function OrdersPage() {
   const orders = await getOrders();
+  const timeZone = 'America/Sao_Paulo';
 
   return (
     <div className="space-y-6">
@@ -58,7 +59,7 @@ export default async function OrdersPage() {
                    <AccordionTrigger className="px-4 text-sm hover:no-underline">
                      <div className="flex w-full items-center">
                         <div className="w-[100px] text-left font-semibold text-primary">#{order.orderNumber}</div>
-                        <div className="w-[180px] text-left">{format(order.createdAt, "d MMM, yyyy 'às' HH:mm", { locale: ptBR })}</div>
+                        <div className="w-[180px] text-left">{formatInTimeZone(order.createdAt, timeZone, "d MMM, yyyy 'às' HH:mm", { locale: ptBR })}</div>
                         <div className="flex-1 text-left font-medium">{order.customer?.name || 'N/A'}</div>
                         <div className="w-[120px] flex justify-center">
                             <Badge variant={order.status === 'paid' ? 'secondary' : 'outline'}>

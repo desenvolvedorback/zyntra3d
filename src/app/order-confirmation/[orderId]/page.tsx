@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, MessageCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format } from "date-fns";
+import { formatInTimeZone } from 'date-fns-tz';
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ async function getOrder(id: string): Promise<Order | null> {
 
 export default async function OrderConfirmationPage({ params }: { params: { orderId: string } }) {
   const order = await getOrder(params.orderId);
+  const timeZone = 'America/Sao_Paulo';
 
   if (!order) {
     return <div className="container py-12 text-center">Pedido não encontrado.</div>;
@@ -60,7 +61,7 @@ export default async function OrderConfirmationPage({ params }: { params: { orde
         <CardContent className="p-6 text-sm">
             <div className="flex justify-between items-center mb-4">
                 <span className="text-muted-foreground">Data do Pedido</span>
-                <span>{format(order.createdAt, "d MMM, yyyy 'às' HH:mm", { locale: ptBR })}</span>
+                <span>{formatInTimeZone(order.createdAt, timeZone, "d MMM, yyyy 'às' HH:mm", { locale: ptBR })}</span>
             </div>
             <div className="flex justify-between items-center mb-6">
                 <span className="text-muted-foreground">Status do Pagamento</span>
