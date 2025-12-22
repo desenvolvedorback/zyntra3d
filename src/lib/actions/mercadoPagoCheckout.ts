@@ -35,7 +35,6 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const cleanCpf = (cpf: string) => cpf.replace(/[^0-9]/g, "");
 
   try {
-    // 1. Criar o pedido no Firestore com status 'pending'
     const orderPayload = {
       status: 'pending',
       total: items.reduce((sum, item) => sum + item.price * item.quantity, 0) + deliveryFee,
@@ -57,7 +56,6 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       paymentId: null,
     };
     const orderRef = await addDoc(collection(db, "orders"), orderPayload);
-
 
     const preferenceItems = items.map((item) => ({
       id: item.productId,
@@ -100,7 +98,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       auto_return: 'approved',
       notification_url: `${siteUrl}/api/mp-webhook`,
       metadata: {
-        orderId: orderRef.id, // Inclui o ID do nosso pedido do Firestore
+        orderId: orderRef.id,
         userId: userProfile.uid,
       },
     };
