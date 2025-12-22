@@ -29,7 +29,7 @@ async function sendOrderNotificationEmail(order: Order) {
 
   const msg = {
     to: adminEmail,
-    from: 'notificacao@docesabor.com', // Use um e-mail de um domínio que você controla
+    from: 'davileonardomaxel346@gmail.com', // E-mail remetente configurado
     subject: `🎉 Novo Pedido Recebido! #${order.orderNumber}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
@@ -109,7 +109,10 @@ export async function POST(req: NextRequest) {
             paymentId: paymentId,
           });
           
-          const updatedOrderData: Order = { ...orderData, status: 'paid', paymentId };
+          // Busca os dados atualizados para enviar no e-mail
+          const updatedOrderSnap = await getDoc(orderRef);
+          const updatedOrderData = updatedOrderSnap.data() as Order;
+
           await sendOrderNotificationEmail(updatedOrderData);
 
           // Limpa o carrinho do usuário após a confirmação do pagamento
@@ -137,4 +140,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
-```
