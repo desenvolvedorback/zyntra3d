@@ -63,7 +63,7 @@ export default async function OrdersPage() {
                                 {order.status === 'paid' ? 'Pago' : 'Pendente'}
                             </Badge>
                         </div>
-                        <div className="w-[120px] text-right font-medium">R$ {order.total.toFixed(2)}</div>
+                        <div className="w-[120px] text-right font-medium">R$ {(order.total || 0).toFixed(2)}</div>
                      </div>
                    </AccordionTrigger>
                    <AccordionContent>
@@ -99,7 +99,7 @@ export default async function OrdersPage() {
                                     <TableRow key={index}>
                                         <TableCell>{item.title}</TableCell>
                                         <TableCell>{item.quantity}</TableCell>
-                                        <TableCell className="text-right">R$ {item.unit_price.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">R$ {(item.unit_price || 0).toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

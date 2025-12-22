@@ -1,3 +1,5 @@
+'use server';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { db } from '@/lib/firebase';
@@ -60,7 +62,7 @@ export async function POST(req: NextRequest) {
             id: item.id,
             title: item.title,
             quantity: Number(item.quantity),
-            unit_price: Number(item.unit_price),
+            unit_price: Number(item.unit_price || item.price || 0), // CORREÇÃO: Usa 'unit_price' ou 'price'
           })),
           customer: {
             id: metadata?.user_id,
