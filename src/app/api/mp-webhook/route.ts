@@ -11,10 +11,15 @@ import { revalidatePath } from 'next/cache';
 // Função para enviar e-mail de notificação
 async function sendOrderNotificationEmail(order: Order) {
   const apiKey = process.env.SENDGRID_API_KEY;
-  const adminEmail = process.env.ADMIN_EMAIL_RECIPIENT;
+  const toEmail = process.env.ADMIN_EMAIL_RECIPIENT;
+  const fromEmail = "davileonardomaxel346@gmail.com";
 
-  if (!apiKey || !adminEmail) {
-    console.warn("SendGrid API Key ou e-mail do admin não configurado. Pulando envio de e-mail.");
+  if (!apiKey) {
+    console.error("SENDGRID_API_KEY não configurada. Pulando envio de e-mail.");
+    return;
+  }
+  if (!toEmail || !fromEmail) {
+    console.error("E-mail de destinatário ou remetente não configurado. Pulando envio de e-mail.");
     return;
   }
 
@@ -29,8 +34,8 @@ async function sendOrderNotificationEmail(order: Order) {
   `).join('');
 
   const msg = {
-    to: adminEmail,
-    from: 'davileonardomaxel346@gmail.com', // E-mail remetente configurado
+    to: toEmail,
+    from: fromEmail, 
     subject: `🎉 Novo Pedido Recebido! #${order.orderNumber}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
@@ -64,9 +69,9 @@ async function sendOrderNotificationEmail(order: Order) {
 
   try {
     await sgMail.send(msg);
-    console.log(`E-mail de notificação enviado para ${adminEmail}`);
-  } catch (error) {
-    console.error('Erro ao enviar e-mail pelo SendGrid:', error);
+    console.log(`E-mail de notificação enviado com sucesso para ${toEmail}`);
+  } catch (error: any) {
+    console.error('Erro detalhado ao enviar e-mail pelo SendGrid:', JSON.stringify(error, null, 2));
   }
 }
 
@@ -114,6 +119,7 @@ export async function POST(req: NextRequest) {
           const updatedOrderSnap = await getDoc(orderRef);
           const updatedOrderData = updatedOrderSnap.data() as Order;
 
+          // Envia o e-mail ANTES de revalidar o path
           await sendOrderNotificationEmail(updatedOrderData);
 
           // Limpa o carrinho do usuário após a confirmação do pagamento
@@ -130,11 +136,11 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Revalida o cache da página de pedidos do admin
+          // Revalida o cache das páginas do admin
           revalidatePath('/admin/orders');
           revalidatePath('/admin/dashboard');
           
-          console.log(`Pedido ${orderId} atualizado para 'pago' com sucesso.`);
+          console.log(`Pedido ${orderId} atualizado para 'pago' e notificação enviada.`);
         }
       }
     }
