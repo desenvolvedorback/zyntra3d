@@ -53,6 +53,9 @@ export interface Order {
   delivery: boolean;
   deliveryFee: number;
   location: string;
+  deliverySlot?: 'morning' | 'afternoon';
+  observation?: string;
+  contactPhone?: string;
   status: 'pending' | 'paid' | 'cancelled';
   createdAt: Date;
   customer?: {

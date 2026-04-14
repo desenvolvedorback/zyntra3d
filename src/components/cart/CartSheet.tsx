@@ -14,7 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { CreditCard, Loader2, ShoppingCart, Trash2, Tag } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CreditCard, Loader2, ShoppingCart, Trash2, Tag, CalendarDays, Info } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { mercadoPagoCheckout } from "@/lib/actions/mercadoPagoCheckout";
+import { formatInTimeZone } from "date-fns-tz";
 
 export function CartSheet() {
   const {
@@ -46,6 +49,11 @@ export function CartSheet() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  // Novos campos logísticos
+  const [deliverySlot, setDeliverySlot] = useState<'morning' | 'afternoon'>('morning');
+  const [observation, setObservation] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+
   const authContext = useContext(AuthContext);
   if (!authContext) {
     throw new Error("AuthProvider não encontrado na árvore de componentes.");
@@ -55,6 +63,9 @@ export function CartSheet() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Verificar se hoje é domingo
+  const isSunday = new Date().getDay() === 0;
 
   const finalPrice = delivery ? totalPrice + finalDeliveryFee : totalPrice;
 
@@ -92,7 +103,7 @@ export function CartSheet() {
       try {
         const checkoutUrl = await mercadoPagoCheckout({
           items: cartItems.map(item => ({
-            id: item.productId, // Corrected from id to productId
+            id: item.productId,
             title: item.name,
             quantity: item.quantity,
             unit_price: item.price,
@@ -100,6 +111,9 @@ export function CartSheet() {
           userProfile,
           deliveryFee: delivery ? finalDeliveryFee : 0,
           location: delivery ? location : "",
+          deliverySlot: delivery ? deliverySlot : undefined,
+          observation: observation,
+          contactPhone: contactPhone,
         });
 
         if (checkoutUrl) {
@@ -140,7 +154,7 @@ export function CartSheet() {
           <span className="sr-only">Carrinho de Compras</span>
         </Button>
       </SheetTrigger>
-      <SheetContent className="flex flex-col">
+      <SheetContent className="flex flex-col w-full sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>Seu Carrinho</SheetTitle>
           <SheetDescription>
@@ -155,20 +169,18 @@ export function CartSheet() {
           </div>
         ) : cartItems.length > 0 ? (
           <>
-            <ScrollArea className="flex-grow pr-6">
+            <ScrollArea className="flex-grow pr-4">
               <div className="flex flex-col divide-y">
                 {cartItems.map((item) => (
                   <CartItem key={item.productId} item={item} />
                 ))}
               </div>
-            </ScrollArea>
-            <SheetFooter className="mt-auto">
-              <div className="w-full space-y-4">
-                <Separator />
+              
+              <div className="mt-6 space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="delivery-switch" className="flex flex-col gap-1">
-                      <span>Adicionar entrega</span>
+                      <span className="font-bold">Adicionar entrega</span>
                        {deliveryPromotion && (
                          <span className="font-normal text-red-600 text-xs flex items-center gap-1">
                            <Tag className="h-3 w-3"/> PROMOÇÃO ATIVA!
@@ -187,20 +199,78 @@ export function CartSheet() {
                   </div>
 
                   {delivery && (
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Seu Endereço</Label>
-                      <Input
-                        id="location"
-                        placeholder="Rua, Número, Bairro, etc."
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        disabled={isPending}
-                      />
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="space-y-2">
+                        <Label htmlFor="location">Endereço de Entrega</Label>
+                        <Input
+                          id="location"
+                          placeholder="Rua, Número, Bairro, etc."
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          disabled={isPending}
+                        />
+                      </div>
+
+                      <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
+                        <Label className="text-sm font-semibold flex items-center gap-2">
+                          <CalendarDays className="h-4 w-4 text-primary" />
+                          Janela de Entrega
+                        </Label>
+                        
+                        {isSunday && (
+                          <div className="flex gap-2 items-start p-2 bg-amber-100 border border-amber-200 rounded text-amber-900 text-xs mb-2">
+                            <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                            <p><strong>Aviso:</strong> Pedidos feitos no domingo são entregues na segunda-feira.</p>
+                          </div>
+                        )}
+
+                        <RadioGroup 
+                          value={deliverySlot} 
+                          onValueChange={(val) => setDeliverySlot(val as 'morning' | 'afternoon')}
+                          className="flex flex-col gap-2"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="morning" id="morning" />
+                            <Label htmlFor="morning" className="font-normal cursor-pointer">Manhã (11:00)</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="afternoon" id="afternoon" />
+                            <Label htmlFor="afternoon" className="font-normal cursor-pointer">Tarde (17:00)</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="contactPhone">Telefone para Contato (Opcional)</Label>
+                        <Input
+                          id="contactPhone"
+                          placeholder="(00) 00000-0000"
+                          value={contactPhone}
+                          onChange={(e) => setContactPhone(e.target.value)}
+                          disabled={isPending}
+                        />
+                      </div>
                     </div>
                   )}
+                </div>
 
-                  <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="observation">Observações para o Pedido</Label>
+                  <Textarea
+                    id="observation"
+                    placeholder="Ex: Ponto de referência, tirar cebola, etc."
+                    value={observation}
+                    onChange={(e) => setObservation(e.target.value)}
+                    disabled={isPending}
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </ScrollArea>
 
+            <SheetFooter className="mt-auto border-t pt-4 bg-background">
+              <div className="w-full space-y-4">
+                <div className="space-y-2">
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Subtotal</span>
                     <span>R$ {totalPrice.toFixed(2)}</span>
@@ -220,14 +290,14 @@ export function CartSheet() {
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center font-bold text-lg">
+                  <div className="flex justify-between items-center font-bold text-xl pt-2">
                     <span>Total</span>
-                    <span>R$ {finalPrice.toFixed(2)}</span>
+                    <span className="text-primary">R$ {finalPrice.toFixed(2)}</span>
                   </div>
                 </div>
                 
                 <Button
-                  className="w-full"
+                  className="w-full h-12 text-lg font-bold"
                   size="lg"
                   onClick={handleCheckout}
                   disabled={isPending || authLoading}
@@ -236,13 +306,13 @@ export function CartSheet() {
                     <Loader2 className="animate-spin" />
                   ) : (
                     <>
-                      <CreditCard className="mr-2" />
+                      <CreditCard className="mr-2 h-5 w-5" />
                       Pagar com Mercado Pago
                     </>
                   )}
                 </Button>
                 
-                <Button variant="outline" className="w-full" onClick={clearCart} disabled={isPending}>
+                <Button variant="ghost" className="w-full text-muted-foreground" size="sm" onClick={clearCart} disabled={isPending}>
                   <Trash2 className="mr-2 h-4 w-4" /> Limpar Carrinho
                 </Button>
               </div>

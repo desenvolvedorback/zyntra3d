@@ -17,9 +17,11 @@ interface MercadoPagoCheckoutArgs {
   userProfile: UserProfile;
   deliveryFee?: number;
   location?: string;
+  deliverySlot?: 'morning' | 'afternoon';
+  observation?: string;
+  contactPhone?: string;
 }
 
-// Função para gerar o próximo número de pedido
 async function getNextOrderNumber(): Promise<number> {
   const counterRef = doc(db, "counters", "orderCounter");
 
@@ -29,11 +31,9 @@ async function getNextOrderNumber(): Promise<number> {
       
       let nextNumber;
       if (!counterDoc.exists()) {
-        // Se o contador não existir, começa em 1001 e o cria.
         nextNumber = 1001;
         transaction.set(counterRef, { lastNumber: nextNumber });
       } else {
-        // Se existir, incrementa o número atual.
         const lastNumber = counterDoc.data().lastNumber || 1000;
         nextNumber = lastNumber + 1;
         transaction.update(counterRef, { lastNumber: nextNumber });
@@ -44,14 +44,12 @@ async function getNextOrderNumber(): Promise<number> {
     return newOrderNumber;
   } catch (error) {
     console.error("Error in transaction for order number generation: ", error);
-    // Fallback: usar um timestamp se a transação falhar.
     return Date.now();
   }
 }
 
-
 export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promise<string | null> {
-  const { items, userProfile, deliveryFee = 0, location = '' } = args;
+  const { items, userProfile, deliveryFee = 0, location = '', deliverySlot, observation = '', contactPhone = '' } = args;
 
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!accessToken) {
@@ -61,7 +59,6 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const client = new MercadoPagoConfig({ accessToken });
   const preference = new Preference(client);
 
-  // Garante que a URL base seja a de produção se a variável de ambiente não estiver definida.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://doce-sabor.onrender.com';
 
   const nameParts = userProfile.displayName?.split(' ') || [];
@@ -75,9 +72,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
 
   try {
     const orderNumber = await getNextOrderNumber();
-    
     const orderRef = doc(collection(db, "orders"));
-    
     const isDelivery = deliveryFee > 0 && !!location;
 
     const orderPayload = {
@@ -96,8 +91,11 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         email: userProfile.email,
       },
       delivery: isDelivery,
-      deliveryFee: isDelivery ? deliveryFee : 0,
-      location: isDelivery ? location : '',
+      deliveryFee: isDelivery ? (deliveryFee || 0) : 0,
+      location: isDelivery ? (location || '') : '',
+      deliverySlot: isDelivery ? (deliverySlot || null) : null,
+      observation: observation || '',
+      contactPhone: contactPhone || '',
       createdAt: serverTimestamp(),
       paymentId: null,
     };
@@ -111,12 +109,12 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       currency_id: 'BRL',
     }));
 
-    if (isDelivery && deliveryFee > 0) {
+    if (isDelivery && (deliveryFee || 0) > 0) {
       preferenceItems.push({
         id: 'delivery_fee',
         title: 'Taxa de Entrega',
         quantity: 1,
-        unit_price: deliveryFee,
+        unit_price: deliveryFee || 0,
         currency_id: 'BRL',
       });
     }
@@ -150,7 +148,6 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     };
 
     const result = await preference.create({ body: preferenceBody });
-    
     return result.init_point || null;
 
   } catch (error: any) {
