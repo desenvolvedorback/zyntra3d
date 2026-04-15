@@ -1,25 +1,47 @@
+'use client';
+
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { NewsForm } from "@/components/admin/news/NewsForm";
 import type { News } from "@/lib/types";
+import { useEffect, useState, use } from "react";
+import { Loader2 } from "lucide-react";
 
-async function getNews(id: string) {
-  const docRef = doc(db, "news", id);
-  const docSnap = await getDoc(docRef);
+export default function EditNewsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [news, setNews] = useState<News | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      ...data,
-      createdAt: data.createdAt.toDate(),
-    } as News;
+  useEffect(() => {
+    async function getNews() {
+      try {
+        const docRef = doc(db, "news", id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setNews({
+            id: docSnap.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          } as News);
+        }
+      } catch (error) {
+        console.error("Error fetching news:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    getNews();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
-  return null;
-}
-
-export default async function EditNewsPage({ params }: { params: { id: string } }) {
-  const news = await getNews(params.id);
 
   if (!news) {
     return <div>Notícia não encontrada.</div>;

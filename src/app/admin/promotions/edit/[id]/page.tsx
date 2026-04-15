@@ -1,37 +1,56 @@
+'use client';
+
 import { doc, getDoc, getDocs, collection, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { PromotionForm } from "@/components/admin/promotions/PromotionForm";
 import type { Promotion, Product } from "@/lib/types";
+import { useEffect, useState, use } from "react";
+import { Loader2 } from "lucide-react";
 
-async function getPromotion(id: string) {
-  const docRef = doc(db, "promotions", id);
-  const docSnap = await getDoc(docRef);
+export default function EditPromotionPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [promotion, setPromotion] = useState<Promotion | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      ...data,
-    } as Promotion;
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const docRef = doc(db, "promotions", id);
+        const productsCollection = collection(db, "products");
+        const q = query(productsCollection, orderBy("name", "asc"));
+        
+        const [docSnap, productSnapshot] = await Promise.all([
+          getDoc(docRef),
+          getDocs(q)
+        ]);
+
+        if (docSnap.exists()) {
+          setPromotion({ id: docSnap.id, ...docSnap.data() } as Promotion);
+        }
+
+        const productList = productSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        } as Product));
+        setProducts(productList);
+
+      } catch (error) {
+        console.error("Error fetching promotion data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
-  return null;
-}
-
-async function getProducts(): Promise<Product[]> {
-  const productsCollection = collection(db, "products");
-  const q = query(productsCollection, orderBy("name", "asc"));
-  const productSnapshot = await getDocs(q);
-  return productSnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-  } as Product));
-}
-
-export default async function EditPromotionPage({ params }: { params: { id: string } }) {
-  const [promotion, products] = await Promise.all([
-    getPromotion(params.id),
-    getProducts()
-  ]);
 
   if (!promotion) {
     return <div>Promoção não encontrada.</div>;

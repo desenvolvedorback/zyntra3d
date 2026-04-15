@@ -7,8 +7,6 @@ import { collection, getDocs, limit, orderBy, query, where } from "firebase/fire
 import { db } from "@/lib/firebase";
 import type { News, Product, Promotion } from "@/lib/types";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
-import { formatInTimeZone } from 'date-fns-tz';
-import { ptBR } from "date-fns/locale";
 import { applyPromotions } from "@/lib/promotions";
 import { Cpu, Printer, Box, Share2, Zap } from "lucide-react";
 
@@ -17,13 +15,15 @@ async function getFeaturedProducts() {
     const productsCollection = collection(db, "products");
     const q = query(productsCollection, orderBy("createdAt", "desc"), limit(4));
     const productSnapshot = await getDocs(q);
+    
     if (productSnapshot.empty) return [];
+    
     const products = productSnapshot.docs.map(doc => {
       const data = doc.data();
       return { 
         id: doc.id,
         ...data,
-        createdAt: data.createdAt.toDate(),
+        createdAt: data.createdAt?.toDate() || new Date(),
       } as Product;
     });
 
@@ -36,14 +36,13 @@ async function getFeaturedProducts() {
 
   } catch (error) {
     console.error("Error fetching featured products:", error);
-    return [];
+    return []; // Retorna vazio em caso de erro de permissão no build
   }
 }
 
 export default async function HomePage() {
   const heroImage = PlaceHolderImages.find(p => p.id === 'hero-bg');
   const featuredProducts = await getFeaturedProducts();
-  const timeZone = 'America/Sao_Paulo';
 
   const categories = [
     { name: "Modelos Prontos", icon: Box },
