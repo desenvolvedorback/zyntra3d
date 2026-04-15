@@ -15,12 +15,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/shared/Logo";
 import { Loader2 } from "lucide-react";
 
-declare global {
-  interface Window {
-    grecaptcha: any;
-  }
-}
-
 export default function SignupPage() {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,22 +29,24 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
 
-    if (typeof window.grecaptcha === "undefined") {
+    const grecaptcha = (window as any).grecaptcha;
+
+    if (!grecaptcha || !grecaptcha.enterprise) {
       toast({
         variant: "destructive",
-        title: "Falha na verificação",
-        description: "O reCAPTCHA não carregou. Por favor, recarregue a página.",
+        title: "Erro de Segurança",
+        description: "O reCAPTCHA não carregou corretamente. Recarregue a página.",
       });
       setLoading(false);
       return;
     }
     
-    window.grecaptcha.enterprise.ready(async () => {
+    grecaptcha.enterprise.ready(async () => {
       try {
-        const token = await window.grecaptcha.enterprise.execute('6Lc5eC0sAAAAAF1tCihMIO3M1cvhoZX3Tek3OPcQ', {action: 'SIGNUP'});
+        const token = await grecaptcha.enterprise.execute('6Lfcw7gsAAAAALfTGJxPHLwTEz48zEcO-2m6yLDi', {action: 'SIGNUP'});
         
         if (!token) {
-          throw new Error("Verificação reCAPTCHA falhou.");
+          throw new Error("Falha na verificação de robô.");
         }
 
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -58,28 +54,23 @@ export default function SignupPage() {
 
         await updateProfile(user, { displayName });
 
-        // Create user profile in Firestore
         await setDoc(doc(db, "users", user.uid), {
           uid: user.uid,
           email: user.email,
           displayName: displayName,
           cpf,
           phone,
-          role: 'customer', // Default role
+          role: 'customer',
         });
 
-        toast({
-          title: "Conta Criada!",
-          description: "Bem-vindo à Doce Sabor!",
-        });
+        toast({ title: "Bem-vindo!", description: "Conta criada com sucesso na Forge3D." });
         router.push("/");
 
       } catch (error: any) {
-        console.error("Signup error:", error);
         toast({
           variant: "destructive",
-          title: "Falha no Cadastro",
-          description: error.message || "Ocorreu um erro desconhecido.",
+          title: "Erro no Cadastro",
+          description: error.message || "Não foi possível criar sua conta.",
         });
       } finally {
         setLoading(false);
@@ -89,85 +80,42 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm border-primary/20 bg-card/50 backdrop-blur-sm">
         <CardHeader className="text-center">
           <Logo className="mx-auto mb-4 !h-20 !w-40" />
-          <CardTitle className="text-2xl font-headline text-primary">Criar uma Conta</CardTitle>
-          <CardDescription>Junte-se a nós e prove a doçura.</CardDescription>
+          <CardTitle className="text-2xl font-headline text-primary">Crie seu Perfil</CardTitle>
+          <CardDescription>Junte-se à maior oficina 3D de Botucatu.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="displayName">Nome Completo</Label>
-              <Input
-                id="displayName"
-                type="text"
-                placeholder="Seu Nome"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-                disabled={loading}
-              />
+              <Input id="displayName" placeholder="Seu Nome" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required disabled={loading} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="voce@exemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
+              <Label htmlFor="email">E-mail</Label>
+              <Input id="email" type="email" placeholder="voce@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={loading} />
             </div>
              <div className="space-y-2">
               <Label htmlFor="cpf">CPF</Label>
-              <Input
-                id="cpf"
-                type="text"
-                placeholder="000.000.000-00"
-                value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
-                required
-                disabled={loading}
-              />
+              <Input id="cpf" placeholder="000.000.000-00" value={cpf} onChange={(e) => setCpf(e.target.value)} required disabled={loading} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                type="text"
-                placeholder="(00) 00000-0000"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                disabled={loading}
-              />
+              <Input id="phone" placeholder="+55 (00) 00000-0000" value={phone} onChange={(e) => setPhone(e.target.value)} required disabled={loading} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                disabled={loading}
-              />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} disabled={loading} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" /> : "Cadastrar"}
+              {loading ? <Loader2 className="animate-spin" /> : "Criar Conta"}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex justify-center border-t border-white/5 pt-4">
           <p className="text-sm text-muted-foreground">
-            Já tem uma conta?{" "}
-            <Button variant="link" asChild className="p-0">
-              <Link href="/login">Entrar</Link>
-            </Button>
+            Já possui conta? <Link href="/login" className="text-primary hover:underline">Entrar</Link>
           </p>
         </CardFooter>
       </Card>

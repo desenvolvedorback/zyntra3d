@@ -1,4 +1,3 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
@@ -25,7 +24,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;700&family=Belleza&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
-        <Script src="https://www.google.com/recaptcha/enterprise.js?render=6Lc5eC0sAAAAAF1tCihMIO3M1cvhoZX3Tek3OPcQ" strategy="beforeInteractive" />
+        <Script 
+          src="https://www.google.com/recaptcha/enterprise.js?render=6Lfcw7gsAAAAALfTGJxPHLwTEz48zEcO-2m6yLDi" 
+          strategy="beforeInteractive" 
+        />
       </head>
       <body className="font-body antialiased min-h-screen flex flex-col bg-background text-foreground">
         <Providers>
