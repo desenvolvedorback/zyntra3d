@@ -22,7 +22,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { deletePromotion } from "@/lib/actions/promotionActions";
+import { doc, deleteDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import type { Promotion } from "@/lib/types";
 
 interface CellActionsProps {
@@ -38,10 +39,12 @@ export const CellActions: React.FC<CellActionsProps> = ({ data }) => {
   const onDelete = async () => {
     setLoading(true);
     try {
-      await deletePromotion(data.id);
-      toast({ title: "Sucesso", description: "Promoção excluída." });
+      const docRef = doc(db, "promotions", data.id);
+      await deleteDoc(docRef);
+      toast({ title: "Sucesso", description: "Promoção removida." });
       router.refresh();
-    } catch (error) {
+      window.location.reload();
+    } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: "Falha ao excluir promoção." });
     } finally {
       setLoading(false);
@@ -54,15 +57,15 @@ export const CellActions: React.FC<CellActionsProps> = ({ data }) => {
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Promoção?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente esta promoção.
+              Esta oferta deixará de ser aplicada aos produtos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={onDelete} disabled={loading}>
-              Continuar
+            <AlertDialogAction onClick={onDelete} disabled={loading} className="bg-destructive text-destructive-foreground">
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

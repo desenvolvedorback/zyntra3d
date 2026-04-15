@@ -22,7 +22,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { deleteProduct } from "@/lib/actions/productActions";
+import { doc, deleteDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import type { Product } from "@/lib/types";
 
 interface CellActionsProps {
@@ -38,11 +39,17 @@ export const CellActions: React.FC<CellActionsProps> = ({ data }) => {
   const onDelete = async () => {
     setLoading(true);
     try {
-      await deleteProduct(data.id);
-      toast({ title: "Sucesso", description: "Produto excluído." });
+      const docRef = doc(db, "products", data.id);
+      await deleteDoc(docRef);
+      toast({ title: "Sucesso", description: "Projeto removido da oficina." });
       router.refresh();
-    } catch (error) {
-      toast({ variant: "destructive", title: "Erro", description: "Falha ao excluir produto." });
+      window.location.reload(); // Garante atualização da lista
+    } catch (error: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Erro na exclusão", 
+        description: error.message || "Você não tem permissão para esta ação." 
+      });
     } finally {
       setLoading(false);
       setOpen(false);
@@ -54,15 +61,15 @@ export const CellActions: React.FC<CellActionsProps> = ({ data }) => {
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Projeto?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente este produto.
+              Esta ação removerá permanentemente o item "{data.name}" do catálogo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={onDelete} disabled={loading}>
-              Continuar
+            <AlertDialogAction onClick={onDelete} disabled={loading} className="bg-destructive text-destructive-foreground">
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

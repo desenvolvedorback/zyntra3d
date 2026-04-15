@@ -22,7 +22,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { deleteNewsArticle } from "@/lib/actions/newsActions";
+import { doc, deleteDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import type { News } from "@/lib/types";
 
 interface CellActionsProps {
@@ -38,10 +39,12 @@ export const CellActions: React.FC<CellActionsProps> = ({ data }) => {
   const onDelete = async () => {
     setLoading(true);
     try {
-      await deleteNewsArticle(data.id);
+      const docRef = doc(db, "news", data.id);
+      await deleteDoc(docRef);
       toast({ title: "Sucesso", description: "Notícia excluída." });
       router.refresh();
-    } catch (error) {
+      window.location.reload();
+    } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: "Falha ao excluir notícia." });
     } finally {
       setLoading(false);
@@ -54,15 +57,15 @@ export const CellActions: React.FC<CellActionsProps> = ({ data }) => {
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Notícia?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente esta notícia.
+              Esta notícia será removida permanentemente do feed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={onDelete} disabled={loading}>
-              Continuar
+            <AlertDialogAction onClick={onDelete} disabled={loading} className="bg-destructive text-destructive-foreground">
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
