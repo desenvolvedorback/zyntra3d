@@ -1,3 +1,4 @@
+
 "use client";
 
 import { createContext, useState, useEffect, type ReactNode } from "react";
@@ -25,28 +26,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
-      setUser(user);
-      if (user) {
-        const userDocRef = doc(db, "users", user.uid);
+      setUser(currentUser);
+
+      if (currentUser) {
+        // Verificação imediata de Admin baseada no UID e Email da conta
+        const isStrictAdmin = currentUser.uid === ADMIN_UID && currentUser.email === ADMIN_EMAIL;
+        setIsAdmin(isStrictAdmin);
+
+        const userDocRef = doc(db, "users", currentUser.uid);
         try {
           const userDoc = await getDoc(userDocRef);
           if (userDoc.exists()) {
-            const profile = userDoc.data() as UserProfile;
-            setUserProfile(profile);
-            
-            // Verificação restrita de Admin conforme solicitado
-            const isStrictAdmin = user.uid === ADMIN_UID && user.email === ADMIN_EMAIL;
-            setIsAdmin(isStrictAdmin);
+            setUserProfile(userDoc.data() as UserProfile);
           } else {
-            setUserProfile(null);
-            setIsAdmin(false);
+            // Se o documento não existe (ex: primeiro login), criamos um perfil temporário em memória
+            // para que a interface não quebre e o usuário consiga navegar
+            setUserProfile({
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName || "Usuário Zyntra",
+              role: isStrictAdmin ? 'admin' : 'customer',
+              cpf: "",
+              phone: currentUser.phoneNumber || "",
+            });
           }
         } catch (error) {
-          console.error("Error fetching user profile:", error);
-          setUserProfile(null);
-          setIsAdmin(false);
+          console.error("Erro ao carregar perfil do Firestore:", error);
+          // Fallback em caso de erro de permissão ou rede
+          setUserProfile({
+            uid: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName || "Usuário Zyntra",
+            role: isStrictAdmin ? 'admin' : 'customer',
+            cpf: "",
+            phone: currentUser.phoneNumber || "",
+          });
         }
       } else {
         setUserProfile(null);
