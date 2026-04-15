@@ -27,47 +27,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setLoading(true);
       setUser(currentUser);
 
       if (currentUser) {
-        // Verificação imediata de Admin baseada no UID e Email da conta
-        const isStrictAdmin = currentUser.uid === ADMIN_UID && currentUser.email === ADMIN_EMAIL;
+        // Verificação imediata de Admin baseada no UID e Email da conta para evitar bloqueios por rede
+        const isStrictAdmin = currentUser.uid === ADMIN_UID || currentUser.email === ADMIN_EMAIL;
         setIsAdmin(isStrictAdmin);
 
-        const userDocRef = doc(db, "users", currentUser.uid);
+        // Define um perfil básico imediatamente para que a UI carregue
+        const fallbackProfile: UserProfile = {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName || "Usuário Zyntra",
+          role: isStrictAdmin ? 'admin' : 'customer',
+          cpf: "",
+          phone: currentUser.phoneNumber || "",
+        };
+        setUserProfile(fallbackProfile);
+
         try {
+          const userDocRef = doc(db, "users", currentUser.uid);
           const userDoc = await getDoc(userDocRef);
+          
           if (userDoc.exists()) {
             setUserProfile(userDoc.data() as UserProfile);
-          } else {
-            // Se o documento não existe (ex: primeiro login), criamos um perfil temporário em memória
-            // para que a interface não quebre e o usuário consiga navegar
-            setUserProfile({
-              uid: currentUser.uid,
-              email: currentUser.email,
-              displayName: currentUser.displayName || "Usuário Zyntra",
-              role: isStrictAdmin ? 'admin' : 'customer',
-              cpf: "",
-              phone: currentUser.phoneNumber || "",
-            });
           }
         } catch (error) {
-          console.error("Erro ao carregar perfil do Firestore:", error);
-          // Fallback em caso de erro de permissão ou rede
-          setUserProfile({
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName || "Usuário Zyntra",
-            role: isStrictAdmin ? 'admin' : 'customer',
-            cpf: "",
-            phone: currentUser.phoneNumber || "",
-          });
+          console.warn("Firestore offline ou erro de permissão. Usando perfil local temporário.");
         }
       } else {
         setUserProfile(null);
         setIsAdmin(false);
       }
+      
+      // Garante que o estado de carregamento termine sempre
       setLoading(false);
     });
 

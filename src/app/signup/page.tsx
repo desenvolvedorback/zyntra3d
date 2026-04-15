@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -46,7 +47,7 @@ export default function SignupPage() {
         const token = await grecaptcha.enterprise.execute('6Lfcw7gsAAAAALfTGJxPHLwTEz48zEcO-2m6yLDi', {action: 'SIGNUP'});
         
         if (!token) {
-          throw new Error("Falha na verificação de robô.");
+          throw new Error("Falha na verificação de robô. Tente novamente.");
         }
 
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -60,17 +61,17 @@ export default function SignupPage() {
           displayName: displayName,
           cpf,
           phone,
-          role: 'customer',
+          role: (user.uid === 'bVsOaZZTJ4aFDRpJY40TzZaKBWC2' || user.email === 'admin@zyntra.com') ? 'admin' : 'customer',
         });
 
-        toast({ title: "Bem-vindo!", description: "Conta criada com sucesso na Forge3D." });
+        toast({ title: "Bem-vindo!", description: "Sua conta Zyntra 3D foi criada." });
         router.push("/");
 
       } catch (error: any) {
         toast({
           variant: "destructive",
           title: "Erro no Cadastro",
-          description: error.message || "Não foi possível criar sua conta.",
+          description: error.message || "Verifique sua conexão ou tente outro e-mail.",
         });
       } finally {
         setLoading(false);
@@ -79,43 +80,43 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm border-primary/20 bg-card/50 backdrop-blur-sm">
+    <div className="flex min-h-[calc(100vh-80px)] items-center justify-center p-4">
+      <Card className="w-full max-w-sm border-primary/20 bg-card/50 backdrop-blur-xl shadow-2xl">
         <CardHeader className="text-center">
           <Logo className="mx-auto mb-4 !h-20 !w-40" />
           <CardTitle className="text-2xl font-headline text-primary">Crie seu Perfil</CardTitle>
-          <CardDescription>Junte-se à maior oficina 3D de Botucatu.</CardDescription>
+          <CardDescription>A maior oficina 3D de Botucatu te espera.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="displayName">Nome Completo</Label>
-              <Input id="displayName" placeholder="Seu Nome" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required disabled={loading} />
+              <Input id="displayName" placeholder="Como devemos te chamar?" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required disabled={loading} className="bg-background/50" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" placeholder="voce@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={loading} />
+              <Input id="email" type="email" placeholder="voce@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={loading} className="bg-background/50" />
             </div>
              <div className="space-y-2">
-              <Label htmlFor="cpf">CPF</Label>
-              <Input id="cpf" placeholder="000.000.000-00" value={cpf} onChange={(e) => setCpf(e.target.value)} required disabled={loading} />
+              <Label htmlFor="cpf">CPF (Apenas números)</Label>
+              <Input id="cpf" placeholder="00000000000" value={cpf} onChange={(e) => setCpf(e.target.value)} required disabled={loading} className="bg-background/50" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>
-              <Input id="phone" placeholder="+55 (00) 00000-0000" value={phone} onChange={(e) => setPhone(e.target.value)} required disabled={loading} />
+              <Input id="phone" placeholder="+5514999999999" value={phone} onChange={(e) => setPhone(e.target.value)} required disabled={loading} className="bg-background/50" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} disabled={loading} />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} disabled={loading} className="bg-background/50" />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? <Loader2 className="animate-spin" /> : "Criar Conta"}
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/80" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin" /> : "Finalizar Cadastro"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center border-t border-white/5 pt-4">
           <p className="text-sm text-muted-foreground">
-            Já possui conta? <Link href="/login" className="text-primary hover:underline">Entrar</Link>
+            Já é um Zyntra Maker? <Link href="/login" className="text-primary hover:underline">Entrar</Link>
           </p>
         </CardFooter>
       </Card>
