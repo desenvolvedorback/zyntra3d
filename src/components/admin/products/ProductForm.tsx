@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,6 +6,8 @@ import type { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, Sparkles, Link as LinkIcon } from "lucide-react";
+import { collection, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -15,7 +16,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@/lib/types";
 import { productSchema } from "@/lib/product-schema";
-import { addProduct, updateProduct } from "@/lib/actions/productActions";
 import { generateProductDescription } from "@/ai/flows/generate-product-description";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -94,19 +94,29 @@ export function ProductForm({ initialData }: ProductFormProps) {
       payload.imageHint = data.category;
 
       if (initialData) {
-        await updateProduct(initialData.id, payload);
+        const productRef = doc(db, "products", initialData.id);
+        await updateDoc(productRef, {
+          ...payload,
+          updatedAt: serverTimestamp(),
+        });
         toast({ title: "Sucesso", description: "Produto atualizado com sucesso." });
       } else {
-        await addProduct(payload);
+        const productCollection = collection(db, "products");
+        await addDoc(productCollection, {
+          ...payload,
+          createdAt: serverTimestamp(),
+        });
         toast({ title: "Sucesso", description: "Produto criado com sucesso." });
       }
+      
       router.push("/admin/products");
       router.refresh();
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Erro ao salvar produto:", error);
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Ocorreu um erro ao salvar o produto.",
+        description: error.message || "Ocorreu um erro ao salvar o produto no Zyntra 3D.",
       });
     } finally {
       setLoading(false);
@@ -207,7 +217,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
                     <FormItem>
                       <FormLabel>Preço de Venda (R$)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0.00" {...field} disabled={loading} className="bg-background/50" />
+                        <Input type="number" step="0.01" placeholder="0.00" {...field} disabled={loading} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

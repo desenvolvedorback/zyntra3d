@@ -5,6 +5,8 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { collection, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -13,7 +15,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import type { News } from "@/lib/types";
 import { newsSchema } from "@/lib/news-schema";
-import { addNewsArticle, updateNewsArticle } from "@/lib/actions/newsActions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
@@ -49,19 +50,24 @@ export function NewsForm({ initialData }: NewsFormProps) {
       }
 
       if (initialData) {
-        await updateNewsArticle(initialData.id, payload);
+        const docRef = doc(db, "news", initialData.id);
+        await updateDoc(docRef, payload);
         toast({ title: "Sucesso", description: "Notícia atualizada." });
       } else {
-        await addNewsArticle(payload);
+        const newsCollection = collection(db, "news");
+        await addDoc(newsCollection, {
+          ...payload,
+          createdAt: serverTimestamp(),
+        });
         toast({ title: "Sucesso", description: "Notícia criada." });
       }
       router.push("/admin/news");
       router.refresh();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Algo deu errado.",
+        description: error.message || "Algo deu errado ao salvar a notícia.",
       });
     } finally {
       setLoading(false);

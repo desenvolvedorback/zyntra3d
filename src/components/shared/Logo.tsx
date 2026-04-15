@@ -14,10 +14,10 @@ export function Logo({ className }: { className?: string }) {
       aria-label="Zyntra 3D Home"
     >
       <Image 
-        src="https://files.catbox.moe/4my793.png"
+        src="https://upper-beige-ephwtqnzgo.edgeone.app/Gemini_Generated_Image_d4wmw0d4wmw0d4wm-photoaidcom-cropped.png"
         alt="Zyntra 3D Logo"
-        width={120}
-        height={60}
+        width={80}
+        height={20}
         className="object-contain"
         priority
       />

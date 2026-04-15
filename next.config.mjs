@@ -24,6 +24,12 @@ const nextConfig = {
                 protocol: 'https',
                 hostname: 'files.catbox.moe',
             },
+
+            {
+                protocol: 'https',
+                hostname: 'upper-beige-ephwtqnzgo.edgeone.app',
+            },
+
         ],
     },
 };
