@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,7 +6,7 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Link as LinkIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -25,7 +26,7 @@ interface ProductFormProps {
   initialData?: Product;
 }
 
-const DEFAULT_IMAGE_URL = "https://files.catbox.moe/9m67rz.png";
+const DEFAULT_IMAGE_URL = "https://picsum.photos/seed/3d/600/600";
 
 export function ProductForm({ initialData }: ProductFormProps) {
   const router = useRouter();
@@ -39,6 +40,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
       ...initialData,
       price: initialData.price,
       stock: initialData.stock,
+      digitalLink: initialData.digitalLink || "",
     } : {
       name: "",
       description: "",
@@ -47,6 +49,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
       category: "",
       imageUrl: "",
       imageHint: "",
+      digitalLink: "",
     },
   });
 
@@ -62,7 +65,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     }
     setAiLoading(true);
     try {
-      const result = await generateProductDescription({ title, keywords: "" });
+      const result = await generateProductDescription({ title, keywords: "impressão 3d, precisão, material premium" });
       if (result.description) {
         form.setValue("description", result.description, { shouldValidate: true });
         toast({
@@ -74,7 +77,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
       toast({
         variant: "destructive",
         title: "Falha na Geração por IA",
-        description: "Não foi possível gerar a descrição. Por favor, tente novamente.",
+        description: "Não foi possível gerar a descrição.",
       });
     } finally {
       setAiLoading(false);
@@ -88,16 +91,14 @@ export function ProductForm({ initialData }: ProductFormProps) {
       if (!payload.imageUrl) {
         payload.imageUrl = DEFAULT_IMAGE_URL;
       }
-      
-      // Use category as imageHint
       payload.imageHint = data.category;
 
       if (initialData) {
         await updateProduct(initialData.id, payload);
-        toast({ title: "Sucesso", description: "Produto atualizado." });
+        toast({ title: "Sucesso", description: "Produto atualizado com sucesso." });
       } else {
         await addProduct(payload);
-        toast({ title: "Sucesso", description: "Produto criado." });
+        toast({ title: "Sucesso", description: "Produto criado com sucesso." });
       }
       router.push("/admin/products");
       router.refresh();
@@ -105,7 +106,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Algo deu errado.",
+        description: "Ocorreu um erro ao salvar o produto.",
       });
     } finally {
       setLoading(false);
@@ -117,10 +118,10 @@ export function ProductForm({ initialData }: ProductFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <Card>
+            <Card className="bg-secondary/20 border-white/5">
               <CardHeader>
-                <CardTitle>Detalhes do Produto</CardTitle>
-                <CardDescription>Informações principais sobre o produto.</CardDescription>
+                <CardTitle>Detalhes da Engenharia</CardTitle>
+                <CardDescription>Defina as especificações técnicas do seu item 3D.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <FormField
@@ -128,9 +129,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nome do Produto</FormLabel>
+                      <FormLabel>Nome do Modelo</FormLabel>
                       <FormControl>
-                        <Input placeholder="ex: Bolo de Chocolate" {...field} disabled={loading} />
+                        <Input placeholder="ex: Action Figure Articulado" {...field} disabled={loading} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -142,14 +143,14 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <div className="flex items-center justify-between">
-                        <FormLabel>Descrição</FormLabel>
-                         <Button type="button" variant="ghost" size="sm" onClick={handleGenerateDescription} disabled={aiLoading}>
+                        <FormLabel>Descrição Técnica</FormLabel>
+                         <Button type="button" variant="ghost" size="sm" onClick={handleGenerateDescription} disabled={aiLoading} className="text-accent hover:text-accent/80">
                            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                           <span className="ml-2">Gerar com IA</span>
+                           <span className="ml-2">Otimizar com IA</span>
                          </Button>
                       </div>
                       <FormControl>
-                        <Textarea placeholder="Descreva o produto..." {...field} rows={10} disabled={loading || aiLoading} />
+                        <Textarea placeholder="Descreva materiais, densidade de preenchimento e resolução recomendada..." {...field} rows={10} disabled={loading || aiLoading} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -157,20 +158,34 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 />
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-secondary/20 border-white/5">
               <CardHeader>
-                <CardTitle>Mídia</CardTitle>
-                <CardDescription>Configurações de imagem do produto.</CardDescription>
+                <CardTitle>Recursos Digitais</CardTitle>
+                <CardDescription>Links para download ou arquivos originais.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="digitalLink"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2"><LinkIcon className="h-4 w-4" /> Link do Arquivo (ZIP/STL/OBJ)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://drive.google.com/..." {...field} disabled={loading} className="bg-background/50" />
+                      </FormControl>
+                      <FormDescription>Se preenchido, o link será liberado automaticamente após o pagamento.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="imageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>URL da Imagem</FormLabel>
+                      <FormLabel>URL do Preview/Foto</FormLabel>
                       <FormControl>
-                        <Input placeholder={DEFAULT_IMAGE_URL} {...field} disabled={loading} />
+                        <Input placeholder={DEFAULT_IMAGE_URL} {...field} disabled={loading} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -180,9 +195,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
             </Card>
           </div>
           <div className="space-y-8">
-            <Card>
+            <Card className="bg-secondary/20 border-white/5">
               <CardHeader>
-                <CardTitle>Preço & Estoque</CardTitle>
+                <CardTitle>Comercial</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                  <FormField
@@ -190,9 +205,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   name="price"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Preço</FormLabel>
+                      <FormLabel>Preço de Venda (R$)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="19.99" {...field} disabled={loading} />
+                        <Input type="number" placeholder="0.00" {...field} disabled={loading} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -203,9 +218,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   name="stock"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Quantidade em Estoque</FormLabel>
+                      <FormLabel>Unidades Disponíveis</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="100" {...field} disabled={loading} />
+                        <Input type="number" placeholder="0" {...field} disabled={loading} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -213,9 +228,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 />
               </CardContent>
             </Card>
-             <Card>
+             <Card className="bg-secondary/20 border-white/5">
               <CardHeader>
-                <CardTitle>Organização</CardTitle>
+                <CardTitle>Logística</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                  <FormField
@@ -223,9 +238,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Categoria</FormLabel>
+                      <FormLabel>Categoria do Projeto</FormLabel>
                       <FormControl>
-                        <Input placeholder="ex: Bolos" {...field} disabled={loading} />
+                        <Input placeholder="ex: Personalizados" {...field} disabled={loading} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -236,15 +251,15 @@ export function ProductForm({ initialData }: ProductFormProps) {
           </div>
         </div>
         
-        <Separator />
+        <Separator className="opacity-10" />
         
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="bg-primary hover:bg-primary/80">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {initialData ? "Salvar Alterações" : "Criar Produto"}
+            {initialData ? "Atualizar Projeto" : "Publicar na Oficina"}
           </Button>
         </div>
       </form>

@@ -1,3 +1,4 @@
+
 export interface Product {
   id: string;
   name: string;
@@ -10,6 +11,7 @@ export interface Product {
   createdAt: Date;
   promotion?: Promotion;
   promotionalPrice?: number;
+  digitalLink?: string; // Link para download se for produto digital
 }
 
 export interface News {
@@ -39,6 +41,8 @@ export interface UserProfile {
   phone: string;
 }
 
+export type OrderStatus = 'pending' | 'paid' | 'processing' | 'printing' | 'ready' | 'shipped' | 'delivered' | 'cancelled';
+
 export interface Order {
   id?: string;
   orderNumber: number;
@@ -58,7 +62,9 @@ export interface Order {
   deliverySlot?: 'morning' | 'afternoon';
   observation?: string;
   contactPhone?: string;
-  status: 'pending' | 'paid' | 'cancelled';
+  status: OrderStatus;
+  trackingLink?: string;
+  previewImageUrl?: string;
   createdAt: Date;
   customer?: {
     id: string;
