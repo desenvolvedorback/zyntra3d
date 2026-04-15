@@ -71,7 +71,7 @@ export default async function HomePage() {
         <div className="container relative mx-auto px-6">
           <div className="max-w-3xl space-y-6">
             <h1 className="font-headline text-6xl md:text-8xl leading-none">
-              Dê Vida às suas <span className="gradient-text">Ideias em 3D</span>
+              Dê Vida às suas <span className="gradient-text">Ideias com Zyntra 3D</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground font-alegreya">
               Impressão de alta precisão, modelagem personalizada e os melhores pacotes de arquivos do mercado.

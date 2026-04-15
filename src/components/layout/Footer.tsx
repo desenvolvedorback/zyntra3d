@@ -1,4 +1,3 @@
-
 import { Logo } from "@/components/shared/Logo";
 import { ShieldCheck, Cpu, Zap, Printer } from "lucide-react";
 import Link from "next/link";
@@ -11,7 +10,7 @@ export function Footer() {
           <div className="space-y-4">
             <Logo />
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Transformando arquivos digitais em realidade física com a mais alta precisão e tecnologia de impressão 3D em Botucatu-SP.
+              Transformando arquivos digitais em realidade física com a mais alta precisão e tecnologia de impressão 3D em Botucatu-SP pela Zyntra 3D.
             </p>
           </div>
           <div className="space-y-4">
@@ -40,7 +39,7 @@ export function Footer() {
           </div>
         </div>
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} Forge3D Workshop. Botucatu - SP.</p>
+          <p>© {new Date().getFullYear()} Zyntra 3D Workshop. Botucatu - SP.</p>
           <div className="flex gap-6">
             <Link href="/terms" className="hover:text-primary transition-colors">Termos de Uso</Link>
             <Link href="/privacy" className="hover:text-primary transition-colors">Política de Privacidade</Link>

@@ -30,7 +30,7 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="left" className="w-full max-w-xs bg-card">
                 <SheetHeader>
-                    <SheetTitle className="sr-only">Menu Forge3D</SheetTitle>
+                    <SheetTitle className="sr-only">Menu Zyntra 3D</SheetTitle>
                 </SheetHeader>
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between border-b border-white/5 pb-6">
@@ -81,7 +81,7 @@ export function Header() {
         </nav>
         
         <div className="flex-1 md:hidden flex justify-center">
-          <span className="font-headline text-2xl gradient-text">FORGE3D</span>
+          <span className="font-headline text-2xl gradient-text">ZYNTRA 3D</span>
         </div>
 
         <div className="flex items-center justify-end space-x-3 md:flex-1">

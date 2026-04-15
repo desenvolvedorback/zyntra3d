@@ -135,7 +135,7 @@ export function CartSheet() {
       </SheetTrigger>
       <SheetContent className="flex flex-col w-full sm:max-w-lg bg-card border-l-primary/20">
         <SheetHeader>
-          <SheetTitle className="text-primary font-headline text-2xl">Oficina Forge3D</SheetTitle>
+          <SheetTitle className="text-primary font-headline text-2xl">Oficina Zyntra 3D</SheetTitle>
           <SheetDescription>Revise seus projetos e finalize a produção.</SheetDescription>
         </SheetHeader>
         <Separator className="my-4 opacity-10" />
@@ -269,7 +269,7 @@ export function CartSheet() {
           <div className="flex flex-1 flex-col items-center justify-center text-center opacity-40">
             <Box className="h-24 w-24 text-muted-foreground mb-4" />
             <p className="text-xl font-semibold">Sua oficina está vazia</p>
-            <p className="text-sm">Selecione um modelo ou envie seu projeto para começar.</p>
+            <p className="text-sm">Selecione um modelo ou envie seu projeto para começar na Zyntra 3D.</p>
             <SheetClose asChild>
               <Button asChild className="mt-8 bg-primary">
                 <a href="/products">Ver Catálogo</a>

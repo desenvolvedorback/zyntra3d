@@ -40,11 +40,9 @@ async function updateStock(order: Order) {
 
   } catch (error: any) {
     console.error(`Falha ao atualizar estoque para o pedido #${order.orderNumber}:`, error.message);
-    // TODO: Considerar lógica de notificação de falha (ex: enviar um e-mail para o admin)
   }
 }
 
-// Função para enviar e-mail de notificação usando Nodemailer com Gmail
 async function sendOrderNotificationEmail(order: Order) {
   const senderEmail = process.env.GMAIL_SENDER_EMAIL;
   const appPassword = process.env.GMAIL_APP_PASSWORD;
@@ -55,7 +53,6 @@ async function sendOrderNotificationEmail(order: Order) {
     return;
   }
 
-  // Configura o "transportador" do Nodemailer para usar o Gmail
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -73,13 +70,13 @@ async function sendOrderNotificationEmail(order: Order) {
   `).join('');
 
   const mailOptions = {
-    from: `"Doce Sabor" <${senderEmail}>`,
+    from: `"Zyntra 3D" <${senderEmail}>`,
     to: toEmail,
     subject: `🎉 Novo Pedido Recebido! #${order.orderNumber}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
         <h1 style="color: #333;">🎉 Novo Pedido Recebido! #${order.orderNumber}</h1>
-        <p>Um novo pedido foi pago e confirmado na sua loja Doce Sabor.</p>
+        <p>Um novo pedido foi pago e confirmado na Zyntra 3D.</p>
         
         <h2 style="border-bottom: 2px solid #eee; padding-bottom: 10px; color: #555;">Detalhes do Pedido</h2>
         <p><strong>Cliente:</strong> ${order.customer?.name || 'N/A'}</p>
@@ -110,7 +107,7 @@ async function sendOrderNotificationEmail(order: Order) {
     await transporter.sendMail(mailOptions);
     console.log(`E-mail de notificação enviado com sucesso para ${toEmail}`);
   } catch (error: any) {
-    console.error('Erro detalhado ao enviar e-mail pelo Nodemailer:', error);
+    console.error('Erro ao enviar e-mail pelo Nodemailer:', error);
   }
 }
 
@@ -156,13 +153,9 @@ export async function POST(req: NextRequest) {
           const updatedOrderSnap = await getDoc(orderRef);
           const updatedOrderData = { id: updatedOrderSnap.id, ...updatedOrderSnap.data() } as Order;
 
-          // 1. Atualiza o estoque
           await updateStock(updatedOrderData);
-
-          // 2. Envia notificação por e-mail
           await sendOrderNotificationEmail(updatedOrderData);
           
-          // 3. Limpa o carrinho do usuário
           if (userId) {
             const cartRef = collection(db, "carts", userId, "items");
             const cartSnapshot = await getDocs(cartRef);
@@ -172,11 +165,9 @@ export async function POST(req: NextRequest) {
                 batch.delete(doc.ref);
               });
               await batch.commit();
-              console.log(`Carrinho do usuário ${userId} limpo.`);
             }
           }
           
-          // 4. Revalida as páginas do admin
           revalidatePath('/admin/orders');
           revalidatePath('/admin/dashboard');
           
@@ -187,7 +178,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Erro no webhook do Mercado Pago:", error.message, error.cause);
+    console.error("Erro no webhook do Mercado Pago:", error.message);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

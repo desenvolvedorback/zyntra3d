@@ -15,6 +15,9 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const ADMIN_UID = 'bVsOaZZTJ4aFDRpJY40TzZaKBWC2';
+const ADMIN_EMAIL = 'admin@zyntra.com';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -32,8 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (userDoc.exists()) {
             const profile = userDoc.data() as UserProfile;
             setUserProfile(profile);
-            // Corrige a verificação para ignorar espaços em branco
-            setIsAdmin(profile.role.trim() === 'admin');
+            
+            // Verificação restrita de Admin conforme solicitado
+            const isStrictAdmin = user.uid === ADMIN_UID && user.email === ADMIN_EMAIL;
+            setIsAdmin(isStrictAdmin);
           } else {
             setUserProfile(null);
             setIsAdmin(false);

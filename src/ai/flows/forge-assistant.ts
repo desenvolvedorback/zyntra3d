@@ -1,4 +1,3 @@
-
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -18,8 +17,8 @@ const AssistantOutputSchema = z.object({
 
 export async function askForgeAssistant(input: z.infer<typeof AssistantInputSchema>) {
   const { output } = await ai.generate({
-    system: `Você é o ForgeBot, o assistente técnico da Forge3D. 
-    A Forge3D é especialista em:
+    system: `Você é o ZyntraBot, o assistente técnico da Zyntra 3D. 
+    A Zyntra 3D é especialista em:
     - Impressão FDM e Resina de alta precisão em Botucatu-SP.
     - Modelagem personalizada de logotipos e action figures.
     - Venda de arquivos STL e packs de projetos.

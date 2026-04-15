@@ -9,7 +9,7 @@ import { ForgeBot } from '@/components/shared/ForgeBot';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
-  title: 'Forge3D | Oficina de Impressão e Projetos 3D',
+  title: 'Zyntra 3D | Oficina de Impressão e Projetos 3D',
   description: 'Prototipagem, miniaturas e arquivos 3D com precisão industrial em Botucatu.',
 };
 

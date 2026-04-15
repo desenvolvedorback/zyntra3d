@@ -14,12 +14,12 @@ export function Logo({ className }: { className?: string }) {
         "transition-transform duration-300 ease-in-out hover:scale-105",
         className
       )}
-      aria-label="Doce Sabor Home"
+      aria-label="Zyntra 3D Home"
     >
       {logoImage && (
          <Image 
             src={logoImage.imageUrl}
-            alt="Doce Sabor Logo"
+            alt="Zyntra 3D Logo"
             fill
             className="object-contain"
             data-ai-hint={logoImage.imageHint}
