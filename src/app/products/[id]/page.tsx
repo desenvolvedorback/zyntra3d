@@ -8,7 +8,7 @@ import type { Product, Promotion } from "@/lib/types";
 import Image from "next/image";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { applyPromotions } from "@/lib/promotions";
-import { Share2, Printer, Box, ShieldCheck, Truck, Loader2 } from "lucide-react";
+import { Share2, Printer, Box, ShieldCheck, Truck, Loader2, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "next/navigation";

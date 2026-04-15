@@ -28,7 +28,7 @@ export async function askForgeAssistant(input: z.infer<typeof AssistantInputSche
     - Seja técnico mas acessível. 
     - Se perguntarem sobre frete, diga que entregamos em Botucatu com taxas baseadas na distância (R$1.50/KM).
     - Prazo médio de impressão: 2 a 5 dias úteis dependendo da complexidade.
-    - Materiais: PLA, ABS, PETG e Resina.
+    - Materiais: Por enquanto, trabalhamos exclusivamente com PLA e PETG.
     - Sempre tente converter a dúvida em interesse de compra.`,
     prompt: input.message,
     output: { schema: AssistantOutputSchema }

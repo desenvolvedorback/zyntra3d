@@ -9,7 +9,7 @@ import { useState } from "react";
 import { Loader2, Sparkles, Link as LinkIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -46,7 +46,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
       description: "",
       price: 0,
       stock: 0,
-      category: "",
+      category: "Modelos Prontos",
       imageUrl: "",
       imageHint: "",
       digitalLink: "",
