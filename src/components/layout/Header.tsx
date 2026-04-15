@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -20,7 +21,6 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-xl">
       <div className="container flex h-20 max-w-7xl items-center px-6">
-        {/* Mobile Menu */}
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -57,12 +57,10 @@ export function Header() {
           </Sheet>
         </div>
 
-        {/* Desktop Logo */}
         <div className="hidden md:flex">
           <Logo />
         </div>
 
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8 ml-12 text-sm font-semibold uppercase tracking-wider">
           {navItems.map((item) => (
             <Link
@@ -75,7 +73,7 @@ export function Header() {
           ))}
           {isAdmin && (
             <Link href="/admin" className="text-accent hover:text-accent/80 font-bold border-l border-white/10 pl-8">
-              Admin Panel
+              Admin Zyntra
             </Link>
           )}
         </nav>

@@ -1,5 +1,7 @@
+
 import { Logo } from "@/components/shared/Logo";
 import { ShieldCheck, Cpu, Zap, Printer } from "lucide-react";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
 
 export function Footer() {

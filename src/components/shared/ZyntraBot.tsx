@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, X, Send, Bot, Loader2, Sparkles } from "lucide-react";
-import { askForgeAssistant } from "@/ai/flows/forge-assistant";
+import { askZyntraAssistant } from "@/ai/flows/zyntra-assistant";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ export function ZyntraBot() {
     setLoading(true);
 
     try {
-      const res = await askForgeAssistant({ message: userMsg });
+      const res = await askZyntraAssistant({ message: userMsg });
       setMessages(prev => [...prev, { role: 'bot', text: res.reply }]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'bot', text: "Desculpe, tive um erro no meu processador 3D. Tente novamente!" }]);
@@ -45,7 +45,7 @@ export function ZyntraBot() {
               <div className="p-1.5 rounded-full bg-primary/20">
                 <Sparkles className="h-4 w-4 text-primary" />
               </div>
-              Assistente Forge3D
+              Assistente Zyntra 3D
             </CardTitle>
             <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="h-8 w-8">
               <X className="h-4 w-4" />

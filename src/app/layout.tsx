@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
@@ -5,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { CookieConsent } from '@/components/shared/CookieConsent';
-import { ForgeBot } from '@/components/shared/ForgeBot';
+import { ZyntraBot } from '@/components/shared/ZyntraBot';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
@@ -36,7 +37,7 @@ export default function RootLayout({
             <main className="flex-grow">{children}</main>
             <Footer />
           </div>
-          <ForgeBot />
+          <ZyntraBot />
           <Toaster />
           <CookieConsent />
         </Providers>

@@ -90,7 +90,7 @@ export default function OrdersPage() {
   if (permissionError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-headline text-primary">Gestão de Produção</h1>
+        <h1 className="text-3xl font-headline text-primary">Zyntra 3D - Gestão de Produção</h1>
         <Alert variant="destructive" className="bg-destructive/10 border-destructive/20">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Erro de Permissão</AlertTitle>
@@ -143,7 +143,6 @@ export default function OrdersPage() {
                     <AccordionContent className="bg-black/40">
                       <div className="p-6 space-y-6">
                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                              {/* Gestão de Status */}
                               <div className="space-y-4 p-4 rounded-lg bg-white/5 border border-white/10">
                                   <h4 className="font-bold text-primary flex items-center gap-2 mb-4">
                                     <Package className="h-4 w-4" /> Fluxo de Produção
