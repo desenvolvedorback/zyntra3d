@@ -16,17 +16,16 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CreditCard, Loader2, ShoppingCart, Trash2, Tag, CalendarDays, Info } from "lucide-react";
+import { CreditCard, Loader2, ShoppingCart, Trash2, Tag, CalendarDays, Info, Link as LinkIcon, Truck } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useState, useEffect, useContext, useTransition } from "react";
+import { useState, useEffect, useContext, useTransition, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { mercadoPagoCheckout } from "@/lib/actions/mercadoPagoCheckout";
-import { formatInTimeZone } from "date-fns-tz";
 
 export function CartSheet() {
   const {
@@ -39,8 +38,6 @@ export function CartSheet() {
     setDelivery,
     location,
     setLocation,
-    deliveryFee,
-    finalDeliveryFee,
     deliveryPromotion,
   } = useCart();
 
@@ -49,53 +46,53 @@ export function CartSheet() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  // Novos campos logísticos
-  const [deliverySlot, setDeliverySlot] = useState<'morning' | 'afternoon'>('morning');
+  // Campos Logísticos e 3D
+  const [distanceKm, setDistanceKm] = useState<number>(0);
+  const [fileLink, setFileLink] = useState("");
   const [observation, setObservation] = useState("");
   const [contactPhone, setContactPhone] = useState("");
 
   const authContext = useContext(AuthContext);
-  if (!authContext) {
-    throw new Error("AuthProvider não encontrado na árvore de componentes.");
-  }
+  if (!authContext) throw new Error("AuthProvider não encontrado");
   const { user, userProfile, loading: authLoading } = authContext;
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  useEffect(() => setIsClient(true), []);
 
-  // Verificar se hoje é domingo
-  const isSunday = new Date().getDay() === 0;
+  // Cálculo de Frete Dinâmico (Saindo de Botucatu)
+  const dynamicDeliveryFee = useMemo(() => {
+    if (distanceKm <= 5) return 0; // Entrega grátis no centro de Botucatu
+    return distanceKm * 1.5; // R$ 1.50 por KM
+  }, [distanceKm]);
+
+  const finalDeliveryFee = useMemo(() => {
+    if (!deliveryPromotion) return dynamicDeliveryFee;
+    if (deliveryPromotion.discountType === 'fixed') {
+      return Math.max(0, dynamicDeliveryFee - deliveryPromotion.discountValue);
+    }
+    return dynamicDeliveryFee * (1 - deliveryPromotion.discountValue / 100);
+  }, [dynamicDeliveryFee, deliveryPromotion]);
 
   const finalPrice = delivery ? totalPrice + finalDeliveryFee : totalPrice;
 
+  // Verifica se precisa de link de arquivo (Categoria Arquivos 3D ou Personalizados)
+  const needsFileLink = cartItems.some(item => 
+    item.category === 'Arquivos 3D' || item.category === 'Personalizados'
+  );
+
   const handleCheckout = () => {
     if (!user || !userProfile) {
-      toast({
-        variant: "destructive",
-        title: "Login Necessário",
-        description: "Você precisa estar logado para finalizar a compra.",
-      });
+      toast({ variant: "destructive", title: "Login Necessário", description: "Faça login para finalizar a compra." });
       router.push('/login');
       return;
     }
 
-    if (!userProfile?.cpf || !userProfile?.phone) {
-        toast({
-          variant: "destructive",
-          title: "Dados Incompletos",
-          description: "Seu perfil precisa ter um CPF e telefone válidos para continuar.",
-        });
-        router.push('/profile');
-        return;
+    if (delivery && !location.trim()) {
+      toast({ variant: "destructive", title: "Endereço Necessário", description: "Insira o endereço para entrega." });
+      return;
     }
 
-    if (delivery && !location.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Endereço Necessário",
-        description: "Por favor, insira o seu endereço para a entrega.",
-      });
+    if (needsFileLink && !fileLink.trim()) {
+      toast({ variant: "destructive", title: "Link do Arquivo", description: "Por favor, insira o link do seu modelo 3D (Drive/ZIP)." });
       return;
     }
     
@@ -111,35 +108,18 @@ export function CartSheet() {
           userProfile,
           deliveryFee: delivery ? finalDeliveryFee : 0,
           location: delivery ? location : "",
-          deliverySlot: delivery ? deliverySlot : undefined,
-          observation: observation,
-          contactPhone: contactPhone,
+          observation: `${observation}${fileLink ? ` | LINK: ${fileLink}` : ''}`,
+          contactPhone,
         });
 
-        if (checkoutUrl) {
-          window.location.href = checkoutUrl;
-        } else {
-          throw new Error("URL de checkout não recebida.");
-        }
+        if (checkoutUrl) window.location.href = checkoutUrl;
       } catch (error: any) {
-        console.error("Erro no checkout:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro no Checkout",
-          description: `Falha na comunicação com o Mercado Pago: ${error.message}`,
-        });
+        toast({ variant: "destructive", title: "Erro no Checkout", description: error.message });
       }
     });
   }
 
-  if (!isClient) {
-    return (
-      <Button variant="ghost" size="icon" className="relative">
-        <ShoppingCart className="h-5 w-5" />
-        <span className="sr-only">Carrinho de Compras</span>
-      </Button>
-    );
-  }
+  if (!isClient) return <Button variant="ghost" size="icon"><ShoppingCart className="h-5 w-5" /></Button>;
 
   return (
     <Sheet>
@@ -147,107 +127,92 @@ export function CartSheet() {
         <Button variant="ghost" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
           {cartCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs text-white">
               {cartCount}
             </span>
           )}
-          <span className="sr-only">Carrinho de Compras</span>
         </Button>
       </SheetTrigger>
-      <SheetContent className="flex flex-col w-full sm:max-w-lg">
+      <SheetContent className="flex flex-col w-full sm:max-w-lg bg-card border-l-primary/20">
         <SheetHeader>
-          <SheetTitle>Seu Carrinho</SheetTitle>
-          <SheetDescription>
-            Revise seus itens e finalize a compra.
-          </SheetDescription>
+          <SheetTitle className="text-primary font-headline text-2xl">Oficina Forge3D</SheetTitle>
+          <SheetDescription>Revise seus projetos e finalize a produção.</SheetDescription>
         </SheetHeader>
-        <Separator className="my-4" />
+        <Separator className="my-4 opacity-10" />
 
         {cartLoading ? (
-          <div className="flex flex-1 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <div className="flex flex-1 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : cartItems.length > 0 ? (
           <>
             <ScrollArea className="flex-grow pr-4">
-              <div className="flex flex-col divide-y">
+              <div className="flex flex-col divide-y divide-white/5">
                 {cartItems.map((item) => (
                   <CartItem key={item.productId} item={item} />
                 ))}
               </div>
               
               <div className="mt-6 space-y-6">
+                {/* Seção de Arquivos */}
+                {needsFileLink && (
+                  <div className="space-y-2 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                    <Label className="flex items-center gap-2 text-primary">
+                      <LinkIcon className="h-4 w-4" /> Link do Arquivo 3D (Drive/Mega/ZIP)
+                    </Label>
+                    <Input 
+                      placeholder="https://drive.google.com/..." 
+                      value={fileLink}
+                      onChange={(e) => setFileLink(e.target.value)}
+                      className="bg-black/40"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Necessário para projetos personalizados ou impressões diretas.</p>
+                  </div>
+                )}
+
+                {/* Seção de Entrega */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="delivery-switch" className="flex flex-col gap-1">
-                      <span className="font-bold">Adicionar entrega</span>
-                       {deliveryPromotion && (
-                         <span className="font-normal text-red-600 text-xs flex items-center gap-1">
-                           <Tag className="h-3 w-3"/> PROMOÇÃO ATIVA!
-                         </span>
-                       )}
-                       <span className="font-normal text-muted-foreground text-xs">
-                         Taxa padrão: R$ {deliveryFee.toFixed(2)}
-                       </span>
+                      <span className="font-bold flex items-center gap-2">
+                        <Truck className="h-4 w-4 text-accent" /> Calcular Frete (KM)
+                      </span>
+                      <span className="font-normal text-muted-foreground text-xs">
+                        Baseado na distância de Botucatu-SP
+                      </span>
                     </Label>
                     <Switch
                       id="delivery-switch"
                       checked={delivery}
                       onCheckedChange={setDelivery}
-                      disabled={isPending}
                     />
                   </div>
 
                   {delivery && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Distância Aproximada (KM)</Label>
+                          <Input
+                            type="number"
+                            value={distanceKm}
+                            onChange={(e) => setDistanceKm(Number(e.target.value))}
+                            className="bg-black/40"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Valor do Frete</Label>
+                          <div className="h-10 flex items-center px-3 bg-muted rounded-md text-primary font-bold">
+                            R$ {finalDeliveryFee.toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                      
                       <div className="space-y-2">
-                        <Label htmlFor="location">Endereço de Entrega</Label>
+                        <Label>Endereço Completo</Label>
                         <Input
-                          id="location"
-                          placeholder="Rua, Número, Bairro, etc."
+                          placeholder="Cidade, Bairro, Rua e Número"
                           value={location}
                           onChange={(e) => setLocation(e.target.value)}
-                          disabled={isPending}
-                        />
-                      </div>
-
-                      <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
-                        <Label className="text-sm font-semibold flex items-center gap-2">
-                          <CalendarDays className="h-4 w-4 text-primary" />
-                          Janela de Entrega
-                        </Label>
-                        
-                        {isSunday && (
-                          <div className="flex gap-2 items-start p-2 bg-amber-100 border border-amber-200 rounded text-amber-900 text-xs mb-2">
-                            <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                            <p><strong>Aviso:</strong> Pedidos feitos no domingo são entregues na segunda-feira.</p>
-                          </div>
-                        )}
-
-                        <RadioGroup 
-                          value={deliverySlot} 
-                          onValueChange={(val) => setDeliverySlot(val as 'morning' | 'afternoon')}
-                          className="flex flex-col gap-2"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="morning" id="morning" />
-                            <Label htmlFor="morning" className="font-normal cursor-pointer">Manhã (11:00)</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="afternoon" id="afternoon" />
-                            <Label htmlFor="afternoon" className="font-normal cursor-pointer">Tarde (17:00)</Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="contactPhone">Telefone para Contato (Opcional)</Label>
-                        <Input
-                          id="contactPhone"
-                          placeholder="(00) 00000-0000"
-                          value={contactPhone}
-                          onChange={(e) => setContactPhone(e.target.value)}
-                          disabled={isPending}
+                          className="bg-black/40"
                         />
                       </div>
                     </div>
@@ -255,79 +220,59 @@ export function CartSheet() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="observation">Observações para o Pedido</Label>
+                  <Label>Observações do Projeto</Label>
                   <Textarea
-                    id="observation"
-                    placeholder="Ex: Ponto de referência, tirar cebola, etc."
+                    placeholder="Cor, preenchimento, acabamento ou detalhes técnicos..."
                     value={observation}
                     onChange={(e) => setObservation(e.target.value)}
-                    disabled={isPending}
+                    className="bg-black/40"
                     rows={2}
                   />
                 </div>
               </div>
             </ScrollArea>
 
-            <SheetFooter className="mt-auto border-t pt-4 bg-background">
+            <SheetFooter className="mt-auto border-t border-white/5 pt-4">
               <div className="w-full space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Subtotal</span>
                     <span>R$ {totalPrice.toFixed(2)}</span>
                   </div>
-
                   {delivery && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Taxa de Entrega</span>
-                       {deliveryPromotion ? (
-                         <div className="flex items-baseline gap-2">
-                           <span className="text-red-600 font-bold">R$ {finalDeliveryFee.toFixed(2)}</span>
-                           <span className="text-muted-foreground line-through text-xs">R$ {deliveryFee.toFixed(2)}</span>
-                         </div>
-                       ) : (
-                         <span>R$ {deliveryFee.toFixed(2)}</span>
-                       )}
+                      <span className="text-muted-foreground">Logística (KM)</span>
+                      <span>R$ {finalDeliveryFee.toFixed(2)}</span>
                     </div>
                   )}
-
-                  <div className="flex justify-between items-center font-bold text-xl pt-2">
-                    <span>Total</span>
+                  <div className="flex justify-between items-center font-bold text-2xl pt-2">
+                    <span className="gradient-text">Total</span>
                     <span className="text-primary">R$ {finalPrice.toFixed(2)}</span>
                   </div>
                 </div>
                 
                 <Button
-                  className="w-full h-12 text-lg font-bold"
-                  size="lg"
+                  className="w-full h-14 text-lg font-bold bg-accent hover:bg-accent/80 neon-border"
                   onClick={handleCheckout}
                   disabled={isPending || authLoading}
                 >
-                  {isPending ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <>
-                      <CreditCard className="mr-2 h-5 w-5" />
-                      Pagar com Mercado Pago
-                    </>
-                  )}
+                  {isPending ? <Loader2 className="animate-spin" /> : <><CreditCard className="mr-2 h-5 w-5" /> Iniciar Produção</>}
                 </Button>
                 
-                <Button variant="ghost" className="w-full text-muted-foreground" size="sm" onClick={clearCart} disabled={isPending}>
-                  <Trash2 className="mr-2 h-4 w-4" /> Limpar Carrinho
+                <Button variant="ghost" className="w-full text-muted-foreground" size="sm" onClick={clearCart}>
+                  <Trash2 className="mr-2 h-4 w-4" /> Cancelar Orçamento
                 </Button>
               </div>
             </SheetFooter>
           </>
         ) : (
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <ShoppingCart className="h-16 w-16 text-muted-foreground" />
-            <p className="mt-4 text-lg font-semibold">Seu carrinho está vazio</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Adicione alguns doces para começar!
-            </p>
+          <div className="flex flex-1 flex-col items-center justify-center text-center opacity-40">
+            <Box className="h-24 w-24 text-muted-foreground mb-4" />
+            <p className="text-xl font-semibold">Sua oficina está vazia</p>
+            <p className="text-sm">Selecione um modelo ou envie seu projeto para começar.</p>
             <SheetClose asChild>
-              <Button asChild className="mt-6">
-                <a href="/products">Explorar Doces</a>
+              <Button asChild className="mt-8 bg-primary">
+                <a href="/products">Ver Catálogo</a>
               </Button>
             </SheetClose>
           </div>

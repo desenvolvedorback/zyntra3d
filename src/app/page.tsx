@@ -10,6 +10,7 @@ import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { formatInTimeZone } from 'date-fns-tz';
 import { ptBR } from "date-fns/locale";
 import { applyPromotions } from "@/lib/promotions";
+import { Cpu, Printer, Box, Share2, Zap } from "lucide-react";
 
 async function getFeaturedProducts() {
   try {
@@ -39,154 +40,129 @@ async function getFeaturedProducts() {
   }
 }
 
-async function getLatestNews() {
-  try {
-    const newsCollection = collection(db, "news");
-    const q = query(newsCollection, orderBy("createdAt", "desc"), limit(3));
-    const newsSnapshot = await getDocs(q);
-    if (newsSnapshot.empty) return [];
-    const newsList = newsSnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt.toDate(),
-      } as News;
-    });
-    return newsList;
-  } catch (error) {
-    console.error("Error fetching latest news:", error);
-    return [];
-  }
-}
-
 export default async function HomePage() {
-  const heroImage = PlaceHolderImages.find(p => p.id === 'logo');
+  const heroImage = PlaceHolderImages.find(p => p.id === 'hero-bg');
   const featuredProducts = await getFeaturedProducts();
-  const latestNews = await getLatestNews();
   const timeZone = 'America/Sao_Paulo';
+
+  const categories = [
+    { name: "Modelos Prontos", icon: Box },
+    { name: "Personalizados", icon: Cpu },
+    { name: "Logotipos", icon: Zap },
+    { name: "Arquivos 3D", icon: Share2 },
+    { name: "Pack 3D", icon: Printer },
+  ];
 
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="relative w-full h-[60vh] md:h-[80vh] bg-gradient-to-t from-background via-transparent to-transparent">
+      <section className="relative w-full h-[80vh] flex items-center overflow-hidden">
         {heroImage && (
           <Image
             src={heroImage.imageUrl}
             alt={heroImage.description}
             fill
-            className="object-cover -z-10 animate-subtle-rotate"
+            className="object-cover -z-10 opacity-40 grayscale hover:grayscale-0 transition-all duration-1000"
             priority
-            data-ai-hint={heroImage.imageHint}
+            data-ai-hint="3d printer neon"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
-        <div className="container relative mx-auto flex flex-col items-center justify-center h-full text-center text-primary-foreground">
-          <div className="bg-black/30 backdrop-blur-sm p-8 rounded-lg">
-            <h1 className="font-headline text-5xl md:text-7xl lg:text-8xl drop-shadow-lg">
-              Doce Sabor
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
+        <div className="container relative mx-auto px-6">
+          <div className="max-w-3xl space-y-6">
+            <h1 className="font-headline text-6xl md:text-8xl leading-none">
+              Dê Vida às suas <span className="gradient-text">Ideias em 3D</span>
             </h1>
-            <p className="mt-4 max-w-2xl text-lg md:text-xl drop-shadow-md font-alegreya">
-              Uma loja especializada em doces deliciosas para todos os gostos.
+            <p className="text-xl md:text-2xl text-muted-foreground font-alegreya">
+              Impressão de alta precisão, modelagem personalizada e os melhores pacotes de arquivos do mercado.
             </p>
-            <Button asChild size="lg" className="mt-8 bg-primary text-primary-foreground hover:bg-primary/90">
-              <Link href="/products">Explore Nossos Doces</Link>
-            </Button>
+            <div className="flex flex-wrap gap-4 pt-4">
+              <Button asChild size="lg" className="bg-primary hover:bg-primary/80 neon-border">
+                <Link href="/products">Ver Catálogo</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="border-accent text-accent hover:bg-accent/10">
+                <Link href="/about">Nossa Tecnologia</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Featured Products Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto">
-          <h2 className="text-3xl md:text-4xl font-headline text-center text-primary mb-12">
-            Nossas Criações Exclusivas
-          </h2>
+      {/* Categories Grid */}
+      <section className="py-20 bg-black/50">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+            {categories.map((cat) => (
+              <Link href={`/products?category=${cat.name}`} key={cat.name}>
+                <Card className="bg-secondary/50 border-white/5 hover:border-primary/50 transition-all group cursor-pointer">
+                  <CardContent className="p-8 flex flex-col items-center gap-4">
+                    <cat.icon className="h-10 w-10 text-accent group-hover:scale-110 transition-transform" />
+                    <span className="font-headline text-lg text-center">{cat.name}</span>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Products */}
+      <section className="py-24">
+        <div className="container mx-auto px-6">
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <h2 className="text-4xl font-headline text-primary">Projetos em Destaque</h2>
+              <p className="text-muted-foreground mt-2">Os itens mais desejados da nossa oficina</p>
+            </div>
+            <Button variant="link" asChild className="text-accent">
+              <Link href="/products">Ver todos os produtos →</Link>
+            </Button>
+          </div>
+          
           {featuredProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {featuredProducts.map((product) => (
-                <Card key={product.id} className="overflow-hidden group flex flex-col relative">
-                  {product.promotion && (
-                    <div className="absolute top-2 -right-11 z-10">
-                      <div className="w-48 text-center text-sm font-bold text-white bg-red-600 py-1 transform rotate-45">
-                        PROMOÇÃO
+                <Card key={product.id} className="bg-secondary/30 border-white/5 overflow-hidden group">
+                  <div className="relative h-64 overflow-hidden">
+                    <Image
+                      src={product.imageUrl}
+                      alt={product.name}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-all duration-500"
+                      data-ai-hint={product.category}
+                    />
+                    {product.promotion && (
+                      <div className="absolute top-4 left-4 bg-accent text-white px-3 py-1 text-xs font-bold rounded">
+                        PROMO
                       </div>
-                    </div>
-                  )}
-                  <CardHeader className="p-0">
-                    <Link href={`/products/${product.id}`} className="block relative h-64">
-                      <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        data-ai-hint={product.imageHint}
-                      />
-                    </Link>
-                  </CardHeader>
-                  <CardContent className="p-6 flex flex-col flex-grow">
-                    <CardTitle className="font-headline text-2xl text-primary h-16">{product.name}</CardTitle>
-                    <div className="text-lg font-bold mt-2 flex items-baseline gap-2">
-                      {product.promotion ? (
-                        <>
-                          <span className="text-red-600">R${product.promotionalPrice?.toFixed(2)}</span>
-                          <span className="text-muted-foreground line-through text-sm">R${product.price.toFixed(2)}</span>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">R${product.price.toFixed(2)}</span>
-                      )}
-                    </div>
-                    <div className="mt-auto pt-4">
-                       <AddToCartButton 
-                          product={{
-                            ...product,
-                            price: product.promotionalPrice || product.price,
-                          }}
-                       />
+                    )}
+                  </div>
+                  <CardContent className="p-6">
+                    <span className="text-xs text-accent/80 uppercase tracking-widest">{product.category}</span>
+                    <CardTitle className="font-headline text-2xl mt-1 h-16">{product.name}</CardTitle>
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="flex flex-col">
+                        {product.promotionalPrice ? (
+                          <>
+                            <span className="text-primary font-bold text-xl">R$ {product.promotionalPrice.toFixed(2)}</span>
+                            <span className="text-muted-foreground line-through text-xs">R$ {product.price.toFixed(2)}</span>
+                          </>
+                        ) : (
+                          <span className="text-primary font-bold text-xl">R$ {product.price.toFixed(2)}</span>
+                        )}
+                      </div>
+                      <div className="w-12 h-12">
+                         <AddToCartButton product={product} />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : (
-            <p className="text-center text-muted-foreground">Nossas criações estarão disponíveis em breve. Fique atento!</p>
-          )}
-        </div>
-      </section>
-
-      {/* News Section */}
-      <section className="bg-muted py-16 md:py-24">
-        <div className="container mx-auto">
-          <h2 className="text-3xl md:text-4xl font-headline text-center text-primary mb-12">
-            Últimas Notícias
-          </h2>
-          {latestNews.length > 0 ? (
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {latestNews.map(article => (
-                  <Card key={article.id} className="overflow-hidden">
-                     <CardHeader className="p-0">
-                       <div className="relative h-56">
-                         <Image 
-                           src={article.imageUrl}
-                           alt={article.title}
-                           fill
-                           className="object-cover"
-                           data-ai-hint={article.imageHint}
-                         />
-                       </div>
-                     </CardHeader>
-                     <CardContent className="p-6">
-                       <p className="text-sm text-muted-foreground">{formatInTimeZone(article.createdAt, timeZone, "d 'de' MMMM, yyyy", { locale: ptBR })}</p>
-                       <CardTitle className="font-headline text-xl text-primary mt-2">{article.title}</CardTitle>
-                       <p className="mt-2 text-muted-foreground line-clamp-3">{article.content}</p>
-                     </CardContent>
-                  </Card>
-                ))}
-             </div>
-          ) : (
-            <p className="text-center text-muted-foreground">
-              Fique atento às nossas últimas criações e histórias.
-            </p>
+            <div className="text-center py-20 bg-secondary/20 rounded-lg">
+              <p className="text-muted-foreground">Novos projetos estão sendo renderizados...</p>
+            </div>
           )}
         </div>
       </section>

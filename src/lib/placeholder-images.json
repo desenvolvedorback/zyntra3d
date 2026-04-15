@@ -1,58 +1,28 @@
 {
   "placeholderImages": [
     {
-      "id": "chocolate-cake",
-      "description": "A rich and decadent chocolate layer cake.",
-      "imageUrl": "https://files.catbox.moe/xyowu6.jpeg",
-      "imageHint": "doce sabor logo"
+      "id": "hero-bg",
+      "description": "Impressora 3D de alta precisão em funcionamento com luzes neon.",
+      "imageUrl": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=1200&h=800&auto=format&fit=crop",
+      "imageHint": "3d printer"
     },
     {
-      "id": "strawberry-tart",
-      "description": "A beautiful tart with a buttery crust, cream filling, and fresh strawberries.",
-      "imageUrl": "https://images.unsplash.com/photo-1560529666-317819712619?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzdHJhd2JlcnJ5JTIwdGFydHxlbnwwfHx8fDE3NjU4OTQ5NTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "strawberry tart"
+      "id": "model-ready",
+      "description": "Miniatura detalhada de personagem impressa em resina.",
+      "imageUrl": "https://images.unsplash.com/photo-1614853316476-de00d14cb1fc?q=80&w=600&h=600&auto=format&fit=crop",
+      "imageHint": "3d printed miniature"
     },
     {
-      "id": "assorted-macarons",
-      "description": "A colorful assortment of delicate French macarons.",
-      "imageUrl": "https://files.catbox.moe/xyowu6.jpeg",
-      "imageHint": "doce sabor logo"
-    },
-    {
-      "id": "vanilla-cupcakes",
-      "description": "Classic vanilla cupcakes with fluffy buttercream frosting.",
-      "imageUrl": "https://images.unsplash.com/photo-1555420460-ca0b82023f95?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx2YW5pbGxhJTIwY3VwY2FrZXN8ZW58MHx8fHwxNzY1ODk0OTU4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "vanilla cupcakes"
-    },
-    {
-      "id": "fudgy-brownies",
-      "description": "Gooey and fudgy chocolate brownies, a timeless classic.",
-      "imageUrl": "https://images.unsplash.com/photo-1628655386653-acd9ac2c4e98?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjaG9jb2xhdGUlMjBicm93bmllc3xlbnwwfHx8fDE3NjU4MDAzMjd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "chocolate brownies"
-    },
-    {
-      "id": "ny-cheesecake",
-      "description": "A slice of creamy New York style cheesecake with a graham cracker crust.",
-      "imageUrl": "https://images.unsplash.com/photo-1720586407185-c7651d7d0397?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxzbGljZSUyMGNoZWVzZWNha2V8ZW58MHx8fHwxNzY1ODk0OTU4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "slice cheesecake"
-    },
-    {
-      "id": "cinnamon-rolls",
-      "description": "Warm and gooey cinnamon rolls with a cream cheese glaze.",
-      "imageUrl": "https://images.unsplash.com/photo-1604349347116-c9eeaf23700f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjaW5uYW1vbiUyMHJvbGxzfGVufDB8fHx8MTc2NTg5NDk1OHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "cinnamon rolls"
-    },
-    {
-      "id": "lemon-meringue-pie",
-      "description": "Tangy lemon filling topped with toasted meringue.",
-      "imageUrl": "https://images.unsplash.com/photo-1681329142517-6daaa56d3670?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxsZW1vbiUyMHBpZXxlbnwwfHx8fDE3NjU4OTQ5NTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "lemon pie"
+      "id": "logo-3d",
+      "description": "Logotipo corporativo impresso em filamento metálico.",
+      "imageUrl": "https://images.unsplash.com/photo-1508412087223-706a77c2288e?q=80&w=600&h=600&auto=format&fit=crop",
+      "imageHint": "3d logo"
     },
     {
       "id": "logo",
-      "description": "Logo da Doce Sabor",
-      "imageUrl": "https://files.catbox.moe/xyowu6.jpeg",
-      "imageHint": "doce sabor logo"
+      "description": "Forge3D Logo",
+      "imageUrl": "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=300&h=150&auto=format&fit=crop",
+      "imageHint": "neon cube"
     }
   ]
 }

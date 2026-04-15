@@ -8,8 +8,8 @@ import { CookieConsent } from '@/components/shared/CookieConsent';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
-  title: 'Doce Sabor',
-  description: 'Uma loja especializada em doces deliciosas para todos os gostos.',
+  title: 'Forge3D | Oficina de Impressão e Projetos 3D',
+  description: 'Prototipagem, miniaturas e arquivos 3D com precisão industrial em Botucatu.',
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning className="dark">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

@@ -6,9 +6,8 @@ export interface Product {
   imageUrl: string;
   imageHint: string;
   stock: number;
-  category: string;
+  category: 'Modelos Prontos' | 'Personalizados' | 'Logotipos' | 'Arquivos 3D' | 'Pack 3D';
   createdAt: Date;
-  // Optional promotion fields
   promotion?: Promotion;
   promotionalPrice?: number;
 }
@@ -26,8 +25,9 @@ export interface CartItem {
   productId: string;
   quantity: number;
   name: string;
-  price: number; // This will be the final price (promotional or regular)
+  price: number;
   imageUrl: string;
+  category?: string;
 }
 
 export interface UserProfile {
@@ -53,6 +53,8 @@ export interface Order {
   delivery: boolean;
   deliveryFee: number;
   location: string;
+  distanceKm?: number;
+  fileLink?: string;
   deliverySlot?: 'morning' | 'afternoon';
   observation?: string;
   contactPhone?: string;
@@ -64,12 +66,6 @@ export interface Order {
     email: string;
   };
 }
-
-export type ProfileUpdateData = {
-  displayName: string;
-  cpf: string;
-  phone: string;
-};
 
 export interface Promotion {
   id: string;
