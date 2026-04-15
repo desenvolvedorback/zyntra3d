@@ -30,15 +30,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
 
       if (currentUser) {
-        // Verificação imediata de Admin baseada no UID e Email da conta para evitar bloqueios por rede
+        // Verificação imediata e prioritária de Admin
         const isStrictAdmin = currentUser.uid === ADMIN_UID || currentUser.email === ADMIN_EMAIL;
         setIsAdmin(isStrictAdmin);
 
-        // Define um perfil básico imediatamente para que a UI carregue
+        // Perfil básico imediato
         const fallbackProfile: UserProfile = {
           uid: currentUser.uid,
           email: currentUser.email,
-          displayName: currentUser.displayName || "Usuário Zyntra",
+          displayName: currentUser.displayName || "Zyntra Maker",
           role: isStrictAdmin ? 'admin' : 'customer',
           cpf: "",
           phone: currentUser.phoneNumber || "",
@@ -50,17 +50,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const userDoc = await getDoc(userDocRef);
           
           if (userDoc.exists()) {
-            setUserProfile(userDoc.data() as UserProfile);
+            const data = userDoc.data() as UserProfile;
+            setUserProfile(data);
+            // Reforça isAdmin se o papel no banco for admin
+            if (data.role === 'admin') setIsAdmin(true);
           }
         } catch (error) {
-          console.warn("Firestore offline ou erro de permissão. Usando perfil local temporário.");
+          console.warn("Permissões de leitura de perfil pendentes no Firestore. Usando estado de confiança.");
         }
       } else {
         setUserProfile(null);
         setIsAdmin(false);
       }
       
-      // Garante que o estado de carregamento termine sempre
       setLoading(false);
     });
 

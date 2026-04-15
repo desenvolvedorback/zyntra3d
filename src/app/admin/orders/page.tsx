@@ -1,7 +1,7 @@
 
 'use client';
 
-import { collection, getDocs, orderBy, query, onSnapshot } from "firebase/firestore";
+import { collection, orderBy, query, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order, OrderStatus } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,13 +15,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Clock, MapPin, Phone, MessageSquare, Truck, Package, Printer, CheckCircle2, Link as LinkIcon, Loader2 } from "lucide-react";
+import { Clock, MapPin, Phone, MessageSquare, Truck, Package, Printer, CheckCircle2, Link as LinkIcon, Loader2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updateOrderStatus } from "@/lib/actions/orderActions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; icon: any; color: string }> = {
   pending: { label: 'Pendente', icon: Clock, color: 'text-amber-500' },
@@ -37,20 +38,32 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; icon: any; color: stri
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [permissionError, setPermissionError] = useState(false);
   const { toast } = useToast();
   const timeZone = 'America/Sao_Paulo';
 
   useEffect(() => {
     const q = query(collection(db, "orders"), orderBy("orderNumber", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const orderList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-      } as Order));
-      setOrders(orderList);
-      setLoading(false);
-    });
+    
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const orderList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+        } as Order));
+        setOrders(orderList);
+        setLoading(false);
+        setPermissionError(false);
+      },
+      (error) => {
+        console.error("Firestore Permission Error:", error);
+        setLoading(false);
+        if (error.code === 'permission-denied') {
+          setPermissionError(true);
+        }
+      }
+    );
     return () => unsubscribe();
   }, []);
 
@@ -73,6 +86,22 @@ export default function OrdersPage() {
   };
 
   if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+
+  if (permissionError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-headline text-primary">Gestão de Produção</h1>
+        <Alert variant="destructive" className="bg-destructive/10 border-destructive/20">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erro de Permissão</AlertTitle>
+          <AlertDescription>
+            Você está logado como Admin, mas o Firebase ainda não liberou o acesso aos dados. 
+            <br />Por favor, certifique-se de ter aplicado as <strong>Security Rules</strong> no Console do Firebase conforme as instruções.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
