@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -19,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "../ui/skeleton";
-import { LayoutDashboard, LogOut, User as UserIcon } from "lucide-react";
+import { LayoutDashboard, LogOut, User as UserIcon, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function UserNav() {
@@ -36,12 +35,10 @@ export function UserNav() {
     router.push("/");
   };
 
-  // Se ainda estiver carregando no lado do cliente, mostra o esqueleto
   if (!isClient || loading) {
     return <Skeleton className="h-10 w-10 rounded-full" />;
   }
 
-  // Se não houver usuário logado (Firebase Auth), mostra o botão de login
   if (!user) {
     return (
       <Button asChild variant="outline" className="border-primary/50 text-primary hover:bg-primary/10">
@@ -50,8 +47,7 @@ export function UserNav() {
     );
   }
   
-  // Dados para exibição (prioriza o perfil do Firestore, mas usa o Auth como fallback)
-  const displayName = userProfile?.displayName || user.displayName || "Usuário";
+  const displayName = userProfile?.displayName || user.displayName || "Maker";
   const email = userProfile?.email || user.email || "";
   const photoURL = user.photoURL || undefined;
 
@@ -60,7 +56,7 @@ export function UserNav() {
     .map(n => n[0])
     .join('')
     .toUpperCase()
-    .substring(0, 2) || email.charAt(0).toUpperCase() || 'U';
+    .substring(0, 2) || email.charAt(0).toUpperCase() || 'Z';
 
   return (
     <DropdownMenu>
@@ -86,7 +82,13 @@ export function UserNav() {
           <DropdownMenuItem asChild className="cursor-pointer hover:bg-primary/10 focus:bg-primary/10">
             <Link href="/profile" className="flex items-center">
               <UserIcon className="mr-2 h-4 w-4 text-accent" />
-              <span>Perfil</span>
+              <span>Meu Perfil</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="cursor-pointer hover:bg-primary/10 focus:bg-primary/10">
+            <Link href="/my-orders" className="flex items-center">
+              <ShoppingBag className="mr-2 h-4 w-4 text-accent" />
+              <span>Meus Projetos</span>
             </Link>
           </DropdownMenuItem>
           {isAdmin && (
@@ -101,7 +103,7 @@ export function UserNav() {
         <DropdownMenuSeparator className="bg-white/5" />
         <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:bg-destructive/10">
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Sair</span>
+          <span>Sair da Oficina</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

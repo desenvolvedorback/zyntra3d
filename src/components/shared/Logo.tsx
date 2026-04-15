@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 export function Logo({ className }: { className?: string }) {
-  const logoImage = PlaceHolderImages.find(p => p.id === 'logo');
-
   return (
     <Link
       href="/"
@@ -16,15 +13,14 @@ export function Logo({ className }: { className?: string }) {
       )}
       aria-label="Zyntra 3D Home"
     >
-      {logoImage && (
-         <Image 
-            src={logoImage.imageUrl}
-            alt="Zyntra 3D Logo"
-            fill
-            className="object-contain"
-            data-ai-hint={logoImage.imageHint}
-         />
-      )}
+      <Image 
+        src="/logo.png"
+        alt="Zyntra 3D Logo"
+        width={120}
+        height={60}
+        className="object-contain"
+        priority
+      />
     </Link>
   );
 }
