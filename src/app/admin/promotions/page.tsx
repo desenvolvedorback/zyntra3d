@@ -1,43 +1,66 @@
+
+'use client';
+
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Promotion, Product } from "@/lib/types";
+import type { Promotion, Product, PromotionWithProductName } from "@/lib/types";
 import { PromotionList } from "@/components/admin/promotions/PromotionList";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 
-async function getPromotions(): Promise<Promotion[]> {
-  const promotionsCollection = collection(db, "promotions");
-  const q = query(promotionsCollection, orderBy("createdAt", "desc"));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      ...data,
-      createdAt: data.createdAt?.toDate(),
-    } as Promotion;
-  });
-}
+export default function PromotionsPage() {
+  const [promotions, setPromotions] = useState<PromotionWithProductName[]>([]);
+  const [loading, setLoading] = useState(true);
 
-async function getProducts(): Promise<Product[]> {
-  const productsCollection = collection(db, "products");
-  const q = query(productsCollection);
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-  } as Product));
-}
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const promotionsCollection = collection(db, "promotions");
+        const promoQ = query(promotionsCollection, orderBy("createdAt", "desc"));
+        
+        const productsCollection = collection(db, "products");
+        
+        const [promoSnapshot, productSnapshot] = await Promise.all([
+          getDocs(promoQ),
+          getDocs(productsCollection)
+        ]);
 
-export default async function PromotionsPage() {
-  const [promotions, products] = await Promise.all([getPromotions(), getProducts()]);
+        const products = productSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        } as Product));
 
-  const productsMap = new Map(products.map(p => [p.id, p.name]));
-  const promotionsWithProductNames = promotions.map(promo => ({
-    ...promo,
-    productName: promo.productId ? productsMap.get(promo.productId) : undefined,
-  }));
+        const productsMap = new Map(products.map(p => [p.id, p.name]));
+
+        const promoList = promoSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate(),
+            productName: data.productId ? productsMap.get(data.productId) : undefined,
+          } as PromotionWithProductName;
+        });
+
+        setPromotions(promoList);
+      } catch (error) {
+        console.error("Erro ao buscar promoções:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -49,7 +72,7 @@ export default async function PromotionsPage() {
           </Link>
         </Button>
       </div>
-      <PromotionList promotions={promotionsWithProductNames} />
+      <PromotionList promotions={promotions} />
     </div>
   );
 }
