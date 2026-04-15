@@ -52,8 +52,8 @@ export default function ProductDetailPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Forge3D - ${product?.name}`,
-          text: `Confira este projeto 3D na Forge3D!`,
+          title: `Zyntra 3D - ${product?.name}`,
+          text: `Confira este projeto 3D na Zyntra 3D!`,
           url: window.location.href,
         });
       } catch (err) {
@@ -79,7 +79,7 @@ export default function ProductDetailPage() {
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
               priority
-              data-ai-hint={product.imageHint}
+              data-ai-hint={product.imageHint || product.category}
             />
             {product.promotion && (
               <div className="absolute top-4 left-4 bg-accent text-white px-4 py-1.5 text-xs font-bold rounded-full shadow-lg">
@@ -98,7 +98,7 @@ export default function ProductDetailPage() {
              </div>
              <div className="bg-secondary/30 p-4 rounded-xl border border-white/5 text-center">
                 <ShieldCheck className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <p className="text-[10px] text-muted-foreground uppercase font-bold">Garantia 3D</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold">Garantia Zyntra</p>
              </div>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function ProductDetailPage() {
 
           <div className="space-y-4 mb-8">
             <div className="flex items-center gap-3 text-sm text-green-500 font-bold">
-              <Truck className="h-5 w-5" /> Entrega inteligente via Logística Botucatu
+              <Truck className="h-5 w-5" /> Entrega inteligente via Zyntra Logística
             </div>
             {product.stock <= 5 && product.stock > 0 && (
               <p className="text-destructive font-bold text-sm bg-destructive/10 p-2 rounded inline-block">⏳ ÚLTIMAS {product.stock} UNIDADES EM ESTOQUE!</p>
@@ -146,12 +146,20 @@ export default function ProductDetailPage() {
             />
           </div>
           
-          <div className="mt-8 pt-8 border-t border-white/5 grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <ShieldCheck className="h-4 w-4 text-primary" /> Compra 100% Protegida
+          <div className="mt-8 pt-8 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                <ShieldCheck className="h-4 w-4 text-primary" /> Compra 100% Protegida
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                <Package className="h-4 w-4 text-primary" /> Embalagem Anti-Impacto
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Package className="h-4 w-4 text-primary" /> Embalagem Anti-Impacto
+            <div className="flex flex-col gap-2">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Segurança Verificada:</p>
+              <a href="https://zyntra-scan.onrender.com" target="_blank" rel="noopener noreferrer" className="inline-block transition-transform hover:scale-105">
+                <img src="https://img.shields.io/badge/Analisado%20com-Zyntra%20Scan-0c4a6e?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM3ZGQzZmMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTIgMjJzOC00IDgtMTBWNWwtOC0zLTggM3Y3YzAgNiA4IDEwIDggMTB6Ij48L3BhdGg+PC9zdmc+" alt="Analisado com Zyntra Scan" />
+              </a>
             </div>
           </div>
         </div>

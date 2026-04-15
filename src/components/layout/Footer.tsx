@@ -1,7 +1,6 @@
 
 import { Logo } from "@/components/shared/Logo";
 import { ShieldCheck, Cpu, Zap, Printer } from "lucide-react";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import Link from "next/link";
 
 export function Footer() {
@@ -34,9 +33,16 @@ export function Footer() {
           </div>
           <div className="space-y-4">
             <h4 className="font-headline text-lg text-primary">Segurança</h4>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <ShieldCheck className="h-5 w-5 text-green-500" />
-              <span>Checkout Seguro Mercado Pago</span>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ShieldCheck className="h-5 w-5 text-green-500" />
+                <span>Checkout Seguro Mercado Pago</span>
+              </div>
+              <div className="pt-2">
+                <a href="https://zyntra-scan.onrender.com" target="_blank" rel="noopener noreferrer" className="inline-block transition-opacity hover:opacity-80">
+                  <img src="https://img.shields.io/badge/Analisado%20com-Zyntra%20Scan-0c4a6e?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM3ZGQzZmMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTIgMjJzOC00IDgtMTBWNWwtOC0zLTggM3Y3YzAgNiA4IDEwIDggMTB6Ij48L3BhdGg+PC9zdmc+" alt="Analisado com Zyntra Scan" />
+                </a>
+              </div>
             </div>
           </div>
         </div>
