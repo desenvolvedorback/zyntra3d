@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CreditCard, Loader2, ShoppingCart, Trash2, Tag, CalendarDays, Info, Link as LinkIcon, Truck } from "lucide-react";
+import { CreditCard, Loader2, ShoppingCart, Trash2, Tag, CalendarDays, Info, Link as LinkIcon, Truck, Box } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
