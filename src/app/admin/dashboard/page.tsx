@@ -24,14 +24,12 @@ async function getStats(period: Period): Promise<Stats> {
     const productsSnapshot = await getDocs(collection(db, "products"));
     const newsSnapshot = await getDocs(collection(db, "news"));
     
-    // Simplificamos a consulta para buscar todos os pedidos pagos, e depois filtramos por data no cliente.
-    // Isso evita a necessidade de um índice composto complexo no Firestore.
     const paidOrdersQuery = query(collection(db, "orders"), where("status", "==", "paid"));
     const allPaidOrdersSnapshot = await getDocs(paidOrdersQuery);
     
     const allPaidOrders = allPaidOrdersSnapshot.docs.map(doc => ({
       ...doc.data(),
-      createdAt: doc.data().createdAt.toDate(), // Converte para objeto Date
+      createdAt: doc.data().createdAt.toDate(),
     }));
 
     const now = new Date();
@@ -52,12 +50,11 @@ async function getStats(period: Period): Promise<Stats> {
         startDate = startOfYear(now);
         break;
       case 'all_time':
-        // No date filter needed
         break;
     }
 
     const filteredOrders = allPaidOrders.filter(order => {
-        if (!startDate) return true; // Para 'all_time'
+        if (!startDate) return true;
         const orderDate = order.createdAt;
         if (endDate) {
             return orderDate >= startDate && orderDate <= endDate;
@@ -121,14 +118,14 @@ export default function AdminDashboardPage() {
           <ShoppingCart className="h-7 w-7 text-primary mr-4" />
           <div>
             <p className="text-2xl font-bold">{stats.orderCount}</p>
-            <p className="text-sm text-muted-foreground">Pedidos Pagos</p>
+            <p className="text-sm text-muted-foreground">Vendas Pagas</p>
           </div>
         </div>
          <div className="flex items-center p-4 bg-muted/50 rounded-lg">
           <Package className="h-7 w-7 text-primary mr-4" />
           <div>
             <p className="text-2xl font-bold">{stats.productCount}</p>
-            <p className="text-sm text-muted-foreground">Produtos</p>
+            <p className="text-sm text-muted-foreground">Projetos Ativos</p>
           </div>
         </div>
         <div className="flex items-center p-4 bg-muted/50 rounded-lg">
@@ -142,7 +139,7 @@ export default function AdminDashboardPage() {
             <span className="text-4xl mr-4">💰</span>
             <div>
                <p className="text-2xl font-bold">R$ {stats.totalRevenue.toFixed(2)}</p>
-               <p className="text-sm text-muted-foreground">Receita ({periodLabels[period]})</p>
+               <p className="text-sm text-muted-foreground">Receita Bruta ({periodLabels[period]})</p>
             </div>
          </div>
       </div>
@@ -157,15 +154,15 @@ export default function AdminDashboardPage() {
           <CardHeader>
             <AdminWelcome />
             <CardDescription>
-              Este é o seu centro de controle para a Doce Sabor.
+              Este é o seu centro de controle para a Zyntra 3D.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p>Use a navegação para gerenciar o site e veja as estatísticas ao lado.</p>
-             <div className="mt-4">
-                <label className="text-sm font-medium text-muted-foreground">Período das estatísticas</label>
+            <p className="text-sm text-muted-foreground">Gerencie sua produção, estoque e notícias em um só lugar.</p>
+             <div className="mt-6">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Período de Análise</label>
                  <Select value={period} onValueChange={(value) => setPeriod(value as Period)}>
-                    <SelectTrigger className="w-full mt-2">
+                    <SelectTrigger className="w-full mt-2 bg-background/50">
                         <SelectValue placeholder="Selecione um período" />
                     </SelectTrigger>
                     <SelectContent>
@@ -180,9 +177,9 @@ export default function AdminDashboardPage() {
         </Card>
          <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Estatísticas Rápidas</CardTitle>
+            <CardTitle>Métricas de Produção</CardTitle>
             <CardDescription>
-              Uma visão do desempenho da sua loja para o período selecionado.
+              Desempenho da Zyntra 3D no período selecionado.
             </CardDescription>
           </CardHeader>
           <CardContent>

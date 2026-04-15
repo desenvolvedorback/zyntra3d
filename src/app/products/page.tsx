@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { applyPromotions } from "@/lib/promotions";
+import { Loader2, Search } from "lucide-react";
 
 async function getProducts(): Promise<Product[]> {
   try {
@@ -66,7 +67,7 @@ export default function ProductsPage() {
 
   const renderSkeletons = () => (
     Array.from({ length: 8 }).map((_, i) => (
-      <Card key={i} className="overflow-hidden group flex flex-col">
+      <Card key={i} className="overflow-hidden bg-secondary/20 border-white/5 flex flex-col">
         <CardHeader className="p-0">
           <Skeleton className="h-[250px] w-full" />
         </CardHeader>
@@ -82,29 +83,34 @@ export default function ProductsPage() {
   );
 
   return (
-    <div className="container mx-auto py-12">
-      <h1 className="text-4xl md:text-5xl font-headline text-center text-primary mb-4">
-        Nossa Doce Coleção
-      </h1>
-      <p className="text-center text-muted-foreground mb-12">
-        Explore nossos doces artesanais, feitos com amor e os melhores ingredientes.
-      </p>
+    <div className="container mx-auto py-12 px-6">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl md:text-5xl font-headline text-primary mb-4">
+          Catálogo Zyntra 3D
+        </h1>
+        <p className="text-muted-foreground max-w-2xl mx-auto">
+          Explore nossa coleção de modelos exclusivos, arquivos digitais e soluções personalizadas em manufatura aditiva.
+        </p>
+      </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <Input
-          placeholder="Buscar pelo nome..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          className="flex-grow"
-        />
+      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-secondary/30 p-4 rounded-xl border border-white/5">
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar projetos..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-10 bg-background/50"
+          />
+        </div>
         <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="Filtrar por categoria" />
+          <SelectTrigger className="w-full md:w-[250px] bg-background/50">
+            <SelectValue placeholder="Filtrar Categoria" />
           </SelectTrigger>
           <SelectContent>
             {categories.map((category, index) => (
               <SelectItem key={`${category}-${index}`} value={category} className="capitalize">
-                {category === 'all' ? 'Todas as Categorias' : category}
+                {category === 'all' ? 'Todos os Projetos' : category}
               </SelectItem>
             ))}
           </SelectContent>
@@ -118,40 +124,41 @@ export default function ProductsPage() {
       ) : filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {filteredProducts.map((product) => (
-             <Card key={product.id} className="overflow-hidden group flex flex-col relative">
+             <Card key={product.id} className="overflow-hidden bg-secondary/30 border-white/5 flex flex-col relative group transition-all hover:border-primary/50">
                {product.promotion && (
-                 <div className="absolute top-2 -right-11 z-10">
-                   <div className="w-48 text-center text-sm font-bold text-white bg-red-600 py-1 transform rotate-45">
-                     PROMOÇÃO
-                   </div>
+                 <div className="absolute top-4 left-4 z-10">
+                   <Badge className="bg-accent text-white font-bold">PROMOÇÃO</Badge>
                  </div>
                )}
               <CardHeader className="p-0">
-                <Link href={`/products/${product.id}`} className="block relative aspect-square">
+                <Link href={`/products/${product.id}`} className="block relative aspect-square overflow-hidden">
                   <Image
                     src={product.imageUrl}
                     alt={product.name}
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    data-ai-hint={product.imageHint}
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    data-ai-hint={product.category}
                   />
                 </Link>
               </CardHeader>
               <CardContent className="p-6 flex flex-col flex-grow">
-                <CardTitle className="font-headline text-2xl text-primary h-16">
+                <div className="mb-2">
+                  <span className="text-[10px] uppercase tracking-widest text-accent font-bold">{product.category}</span>
+                </div>
+                <CardTitle className="font-headline text-2xl text-primary h-14 line-clamp-2">
                   <Link href={`/products/${product.id}`}>{product.name}</Link>
                 </CardTitle>
-                <div className="text-lg font-bold mt-2 flex items-baseline gap-2">
+                <div className="text-xl font-bold mt-4 flex items-baseline gap-2">
                   {product.promotion ? (
                     <>
-                      <span className="text-red-600">R${product.promotionalPrice?.toFixed(2)}</span>
-                      <span className="text-muted-foreground line-through text-sm">R${product.price.toFixed(2)}</span>
+                      <span className="text-foreground">R$ {product.promotionalPrice?.toFixed(2)}</span>
+                      <span className="text-muted-foreground line-through text-xs">R$ {product.price.toFixed(2)}</span>
                     </>
                   ) : (
-                    <span className="text-muted-foreground">R${product.price.toFixed(2)}</span>
+                    <span className="text-foreground">R$ {product.price.toFixed(2)}</span>
                   )}
                 </div>
-                <div className="mt-auto pt-4">
+                <div className="mt-auto pt-6">
                   <AddToCartButton 
                     product={{
                       ...product,
@@ -164,11 +171,13 @@ export default function ProductsPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-16">
-          <p className="text-xl font-semibold text-muted-foreground">Nenhum produto encontrado</p>
-          <p className="text-sm text-muted-foreground mt-2">Tente ajustar sua busca ou filtro.</p>
+        <div className="text-center py-24 bg-secondary/10 rounded-2xl border border-dashed border-white/10">
+          <p className="text-xl font-semibold text-muted-foreground">Nenhum projeto encontrado</p>
+          <p className="text-sm text-muted-foreground mt-2">Tente ajustar sua busca ou filtro para o Zyntra 3D.</p>
         </div>
       )}
     </div>
   );
 }
+
+import { Badge } from "@/components/ui/badge";

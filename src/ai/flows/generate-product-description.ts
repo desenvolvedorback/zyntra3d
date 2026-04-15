@@ -32,9 +32,11 @@ const prompt = ai.definePrompt({
   name: 'generateProductDescriptionPrompt',
   input: {schema: GenerateProductDescriptionInputSchema},
   output: {schema: GenerateProductDescriptionOutputSchema},
-  prompt: `Você é um copywriter especialista em e-commerce, especializado em escrever descrições de produtos atraentes para uma loja de doces chamada "Doce Sabor".
+  prompt: `Você é um copywriter especialista em e-commerce e tecnologia, especializado em escrever descrições de produtos atraentes para uma oficina de impressão 3D chamada "Zyntra 3D".
 
-  Gere uma descrição de produto em português do Brasil com base no seguinte título e palavras-chave. A descrição deve ser convidativa, detalhada e despertar o desejo do cliente de comprar o doce.
+  Gere uma descrição de produto em português do Brasil com base no título e palavras-chave fornecidos. 
+  A descrição deve destacar a precisão técnica, a qualidade do material (PLA/PETG) e o valor artístico ou funcional do projeto. 
+  Enfatize que é um produto tecnológico e inovador.
 
   Título: {{{title}}}
   Palavras-chave: {{{keywords}}}

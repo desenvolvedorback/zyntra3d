@@ -59,7 +59,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const client = new MercadoPagoConfig({ accessToken });
   const preference = new Preference(client);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://doce-sabor.onrender.com';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zyntra3d.onrender.com';
 
   const nameParts = userProfile.displayName?.split(' ') || [];
   const firstName = nameParts[0] || '';
@@ -73,12 +73,12 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   try {
     const orderNumber = await getNextOrderNumber();
     const orderRef = doc(collection(db, "orders"));
-    const isDelivery = deliveryFee > 0 && !!location;
+    const isDelivery = (deliveryFee || 0) > 0 && !!location;
 
     const orderPayload = {
       orderNumber,
       status: 'pending' as const,
-      total: items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0) + (isDelivery ? deliveryFee : 0),
+      total: items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0) + (isDelivery ? (deliveryFee || 0) : 0),
       items: items.map(item => ({
         id: item.id,
         title: item.title,
@@ -112,7 +112,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     if (isDelivery && (deliveryFee || 0) > 0) {
       preferenceItems.push({
         id: 'delivery_fee',
-        title: 'Taxa de Entrega',
+        title: 'Taxa de Entrega (Zyntra Logística)',
         quantity: 1,
         unit_price: deliveryFee || 0,
         currency_id: 'BRL',
