@@ -14,7 +14,7 @@ export function Logo({ className }: { className?: string }) {
       aria-label="Zyntra 3D Home"
     >
       <Image 
-        src="/logo.png"
+        src="https://files.catbox.moe/4my793.png"
         alt="Zyntra 3D Logo"
         width={120}
         height={60}

@@ -1,4 +1,3 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
@@ -22,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning className="dark">
       <head>
+        <link rel="icon" href="https://files.catbox.moe/4my793.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;700&family=Belleza&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
