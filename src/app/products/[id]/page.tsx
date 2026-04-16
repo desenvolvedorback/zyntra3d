@@ -21,6 +21,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     async function fetchProduct() {
+      if (!id) return;
       try {
         const docRef = doc(db, "products", id as string);
         const docSnap = await getDoc(docRef);
