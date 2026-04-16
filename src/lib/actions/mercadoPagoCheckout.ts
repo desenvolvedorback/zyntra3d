@@ -62,13 +62,14 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zyntra3d.onrender.com';
 
   const nameParts = userProfile.displayName?.split(' ') || [];
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'N/A';
+  const firstName = nameParts[0] || 'Cliente';
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Zyntra';
 
-  const cleanPhone = (phone: string) => phone.replace(/[^0-9]/g, "");
-  const areaCode = cleanPhone(userProfile.phone).substring(0, 2);
-  const phoneNumber = cleanPhone(userProfile.phone).substring(2);
-  const cleanCpf = (cpf: string) => cpf.replace(/[^0-9]/g, "");
+  const cleanPhone = (phone: string) => phone.replace(/[^0-9]/g, "") || "14999999999";
+  const userPhone = cleanPhone(userProfile.phone || contactPhone);
+  const areaCode = userPhone.substring(0, 2);
+  const phoneNumber = userPhone.substring(2);
+  const cleanCpf = (cpf: string) => cpf.replace(/[^0-9]/g, "") || "00000000000";
 
   try {
     const orderNumber = await getNextOrderNumber();
@@ -95,10 +96,11 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       location: isDelivery ? (location || '') : '',
       deliverySlot: isDelivery ? (deliverySlot || null) : null,
       observation: observation || '',
-      contactPhone: contactPhone || '',
+      contactPhone: contactPhone || userProfile.phone || '',
       createdAt: serverTimestamp(),
       paymentId: null,
     };
+    
     await setDoc(orderRef, orderPayload);
     
     const preferenceItems = items.map((item) => ({
@@ -112,7 +114,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     if (isDelivery && (deliveryFee || 0) > 0) {
       preferenceItems.push({
         id: 'delivery_fee',
-        title: 'Taxa de Entrega (Zyntra Logística)',
+        title: 'Zyntra Logística - Frete',
         quantity: 1,
         unit_price: deliveryFee || 0,
         currency_id: 'BRL',
@@ -145,6 +147,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         order_id: orderRef.id,
         user_id: userProfile.uid,
       },
+      external_reference: orderRef.id,
     };
 
     const result = await preference.create({ body: preferenceBody });
@@ -152,6 +155,6 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
 
   } catch (error: any) {
     console.error("Erro ao criar preferência do Mercado Pago:", error.cause?.message || error.message);
-    throw new Error("Falha ao iniciar o processo de pagamento.");
+    throw new Error("Falha ao iniciar o processo de pagamento. Verifique suas chaves de produção.");
   }
 }
