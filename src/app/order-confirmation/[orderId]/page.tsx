@@ -1,44 +1,69 @@
 
+'use client';
+
+import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, MessageCircle, Clock, MapPin, Phone, MessageSquare, Printer, ImageIcon } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CheckCircle2, MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { formatInTimeZone } from 'date-fns-tz';
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { useParams } from "next/navigation";
 
-async function getOrder(id: string): Promise<Order | null> {
-  try {
-    const docRef = doc(db, "orders", id);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      return { 
-        id: docSnap.id,
-        ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-      } as Order;
-    }
-    return null;
-  } catch (error) {
-    console.error("Error fetching order:", error);
-    return null;
-  }
-}
-
-export default async function OrderConfirmationPage({ params }: { params: { orderId: string } }) {
-  const order = await getOrder(params.orderId);
+export default function OrderConfirmationPage() {
+  const { orderId } = useParams();
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
   const timeZone = 'America/Sao_Paulo';
 
+  useEffect(() => {
+    async function fetchOrder() {
+      if (!orderId) return;
+      try {
+        const docRef = doc(db, "orders", orderId as string);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setOrder({ 
+            id: docSnap.id,
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+          } as Order);
+        }
+      } catch (error) {
+        console.error("Error fetching order:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchOrder();
+  }, [orderId]);
+
+  if (loading) {
+    return (
+      <div className="container py-20 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-muted-foreground animate-pulse">Sincronizando seu projeto 3D...</p>
+      </div>
+    );
+  }
+
   if (!order) {
-    return <div className="container py-20 text-center font-headline text-primary">Pedido não localizado no sistema Zyntra.</div>;
+    return (
+      <div className="container py-20 text-center space-y-4">
+        <h2 className="text-4xl font-headline text-primary">Projeto não localizado</h2>
+        <p className="text-muted-foreground">Não encontramos o pedido #{orderId} no sistema Zyntra.</p>
+        <Button asChild><Link href="/products">Voltar para a Oficina</Link></Button>
+      </div>
+    );
   }
 
   const slotText = order.deliverySlot === 'morning' ? 'Manhã (11:00)' : 'Tarde (17:00)';
@@ -62,7 +87,6 @@ export default async function OrderConfirmationPage({ params }: { params: { orde
         </CardHeader>
         
         <CardContent className="p-8 space-y-8">
-            {/* Visualização da Peça Pronta (Se houver) */}
             {order.previewImageUrl && (
               <div className="space-y-4">
                 <h3 className="font-bold text-primary flex items-center gap-2 text-sm uppercase tracking-widest">

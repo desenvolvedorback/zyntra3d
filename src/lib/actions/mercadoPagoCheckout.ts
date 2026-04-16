@@ -1,3 +1,4 @@
+
 'use server';
 
 import type { UserProfile } from "@/lib/types";
@@ -43,33 +44,39 @@ async function getNextOrderNumber(): Promise<number> {
     });
     return newOrderNumber;
   } catch (error) {
-    console.error("Error in transaction for order number generation: ", error);
-    return Date.now();
+    console.error("Error generating order number: ", error);
+    return Date.now() % 1000000;
   }
 }
 
 export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promise<string | null> {
   const { items, userProfile, deliveryFee = 0, location = '', deliverySlot, observation = '', contactPhone = '' } = args;
 
-  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-  if (!accessToken) {
-    throw new Error("Credenciais do Mercado Pago não configuradas no servidor.");
-  }
-
+  // Utilizando chaves de produção fornecidas
+  const accessToken = 'APP_USR-4873657725416680-041519-a1a2d79c61cee7f1cfa105b8bd7e2db4-99290797';
+  
   const client = new MercadoPagoConfig({ accessToken });
   const preference = new Preference(client);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zyntra3d.onrender.com';
 
-  const nameParts = userProfile.displayName?.split(' ') || [];
-  const firstName = nameParts[0] || 'Cliente';
+  const nameParts = userProfile.displayName?.split(' ') || ['Maker', 'Zyntra'];
+  const firstName = nameParts[0];
   const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Zyntra';
 
-  const cleanPhone = (phone: string) => phone.replace(/[^0-9]/g, "") || "14999999999";
+  // Limpeza de dados para MP
+  const cleanPhone = (phone: string) => {
+    const p = phone.replace(/[^0-9]/g, "");
+    return p.length >= 10 ? p : "14999999999";
+  };
+  
   const userPhone = cleanPhone(userProfile.phone || contactPhone);
   const areaCode = userPhone.substring(0, 2);
   const phoneNumber = userPhone.substring(2);
-  const cleanCpf = (cpf: string) => cpf.replace(/[^0-9]/g, "") || "00000000000";
+  const cleanCpf = (cpf: string) => {
+    const c = cpf.replace(/[^0-9]/g, "");
+    return c.length === 11 ? c : "00000000000";
+  };
 
   try {
     const orderNumber = await getNextOrderNumber();
@@ -88,8 +95,8 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       })),
       customer: {
         id: userProfile.uid,
-        name: userProfile.displayName,
-        email: userProfile.email,
+        name: userProfile.displayName || "Usuário Zyntra",
+        email: userProfile.email || "cliente@zyntra.com",
       },
       delivery: isDelivery,
       deliveryFee: isDelivery ? (deliveryFee || 0) : 0,
@@ -111,10 +118,10 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       currency_id: 'BRL',
     }));
 
-    if (isDelivery && (deliveryFee || 0) > 0) {
+    if (isDelivery) {
       preferenceItems.push({
         id: 'delivery_fee',
-        title: 'Zyntra Logística - Frete',
+        title: 'Zyntra Logística - Entrega Botucatu',
         quantity: 1,
         unit_price: deliveryFee || 0,
         currency_id: 'BRL',
@@ -126,7 +133,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       payer: {
         name: firstName,
         surname: lastName,
-        email: userProfile.email || '',
+        email: userProfile.email || 'contato@zyntra.com',
         phone: {
           area_code: areaCode,
           number: phoneNumber,
@@ -151,10 +158,15 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     };
 
     const result = await preference.create({ body: preferenceBody });
-    return result.init_point || null;
+    
+    if (!result.init_point) {
+      throw new Error("Não foi possível gerar o link de pagamento.");
+    }
+
+    return result.init_point;
 
   } catch (error: any) {
-    console.error("Erro ao criar preferência do Mercado Pago:", error.cause?.message || error.message);
-    throw new Error("Falha ao iniciar o processo de pagamento. Verifique suas chaves de produção.");
+    console.error("Erro no Checkout Zyntra:", error.message);
+    throw new Error(error.message || "Erro ao iniciar pagamento no Mercado Pago.");
   }
 }
