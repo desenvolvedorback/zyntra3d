@@ -1,7 +1,7 @@
 
 "use client";
 
-import { createContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useState, useEffect, useContext, type ReactNode } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -15,6 +15,14 @@ interface AuthContextType {
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth deve ser usado dentro de um AuthProvider");
+  }
+  return context;
+};
 
 const ADMIN_UID = 'bVsOaZZTJ4aFDRpJY40TzZaKBWC2';
 const ADMIN_EMAIL = 'admin@zyntra.com';
@@ -30,11 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
 
       if (currentUser) {
-        // Verificação imediata e prioritária de Admin
         const isStrictAdmin = currentUser.uid === ADMIN_UID || currentUser.email === ADMIN_EMAIL;
         setIsAdmin(isStrictAdmin);
 
-        // Perfil básico imediato
         const fallbackProfile: UserProfile = {
           uid: currentUser.uid,
           email: currentUser.email,
@@ -52,11 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (userDoc.exists()) {
             const data = userDoc.data() as UserProfile;
             setUserProfile(data);
-            // Reforça isAdmin se o papel no banco for admin
             if (data.role === 'admin') setIsAdmin(true);
           }
         } catch (error) {
-          console.warn("Permissões de leitura de perfil pendentes no Firestore. Usando estado de confiança.");
+          console.warn("Permissões de leitura de perfil pendentes no Firestore.");
         }
       } else {
         setUserProfile(null);

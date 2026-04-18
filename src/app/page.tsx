@@ -3,10 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { News, Product, Promotion } from "@/lib/types";
+import type { News, Product } from "@/lib/types";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { applyPromotions } from "@/lib/promotions";
 import { Cpu, Printer, Box, Share2, Zap, Newspaper, Calendar } from "lucide-react";
@@ -25,18 +25,38 @@ async function getFeaturedProducts() {
       const data = doc.data();
       return { 
         id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-      } as Product;
+        name: data.name || "",
+        description: data.description || "",
+        price: Number(data.price) || 0,
+        imageUrl: data.imageUrl || "",
+        imageHint: data.imageHint || "",
+        stock: Number(data.stock) || 0,
+        category: data.category || "Modelos Prontos",
+        digitalLink: data.digitalLink || "",
+        createdAt: data.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
+      };
     });
 
     const promotionsCollection = collection(db, "promotions");
     const promoQuery = query(promotionsCollection, where("isActive", "==", true));
     const promoSnapshot = await getDocs(promoQuery);
-    const promotions = promoSnapshot.docs.map(doc => doc.data() as Promotion);
+    const promotions = promoSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name || "",
+        type: data.type || "product",
+        discountType: data.discountType || "percentage",
+        discountValue: Number(data.discountValue) || 0,
+        productId: data.productId || "",
+        isActive: !!data.isActive,
+        createdAt: data.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
+      };
+    });
     
-    return applyPromotions(products, promotions);
+    return applyPromotions(products as any, promotions as any);
   } catch (error) {
+    console.error("Erro ao buscar produtos:", error);
     return [];
   }
 }
@@ -46,11 +66,17 @@ async function getLatestNews() {
     const newsCollection = collection(db, "news");
     const q = query(newsCollection, orderBy("createdAt", "desc"), limit(3));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-    } as News));
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title || "",
+        content: data.content || "",
+        imageUrl: data.imageUrl || "",
+        imageHint: data.imageHint || "",
+        createdAt: data.createdAt?.toDate() || new Date(),
+      } as News;
+    });
   } catch (error) {
     return [];
   }
@@ -146,11 +172,6 @@ export default async function HomePage() {
                     className="object-cover group-hover:scale-110 transition-all duration-500"
                     data-ai-hint={product.category}
                   />
-                  {product.promotion && (
-                    <div className="absolute top-4 left-4 bg-accent text-white px-3 py-1 text-xs font-bold rounded">
-                      PROMO
-                    </div>
-                  )}
                 </div>
                 <CardContent className="p-6">
                   <span className="text-xs text-accent/80 uppercase tracking-widest">{product.category}</span>
