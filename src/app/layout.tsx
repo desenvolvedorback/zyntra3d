@@ -12,6 +12,9 @@ import Script from 'next/script';
 export const metadata: Metadata = {
   title: 'Zyntra 3D | Oficina de Impressão e Projetos 3D',
   description: 'Prototipagem, miniaturas e arquivos 3D com precisão industrial em Botucatu.',
+  icons: {
+    icon: 'https://files.catbox.moe/4my793.png',
+  }
 };
 
 export default function RootLayout({

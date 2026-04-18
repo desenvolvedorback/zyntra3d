@@ -9,7 +9,7 @@ import type { Order } from '@/lib/types';
 import nodemailer from 'nodemailer';
 import { revalidatePath } from 'next/cache';
 
-const ACCESS_TOKEN = 'APP_USR-4873657725416680-041519-a1a2d79c61cee7f1cfa105b8bd7e2db4-99290797';
+const ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN || 'APP_USR-4873657725416680-041519-a1a2d79c61cee7f1cfa105b8bd7e2db4-99290797';
 
 async function updateStock(order: Order) {
   try {
@@ -33,12 +33,21 @@ async function updateStock(order: Order) {
   }
 }
 
+async function sendWhatsAppNotification(order: Order) {
+  const adminPhone = "5514991023986";
+  console.log(`[Zyntra WhatsApp] Enviando notificação para ${adminPhone} sobre o pedido #${order.orderNumber}`);
+  // Aqui você integraria com um serviço de API de WhatsApp (Ex: Evolution, Twilio, etc)
+}
+
 async function sendOrderNotificationEmail(order: Order) {
   const senderEmail = process.env.GMAIL_SENDER_EMAIL;
   const appPassword = process.env.GMAIL_APP_PASSWORD;
-  const toEmail = 'davi.silva36.senai@gmail.com';
+  const adminEmail = 'davi.silva36.senai@gmail.com';
 
-  if (!senderEmail || !appPassword) return;
+  if (!senderEmail || !appPassword) {
+    console.warn("[Zyntra Email] Variáveis de ambiente de e-mail não configuradas.");
+    return;
+  }
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -55,7 +64,7 @@ async function sendOrderNotificationEmail(order: Order) {
 
   const mailOptions = {
     from: `"Zyntra 3D Workshop" <${senderEmail}>`,
-    to: toEmail,
+    to: adminEmail,
     subject: `🚀 NOVO PEDIDO PAGO! #${order.orderNumber}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; background: #0a0a0a; color: #fff; border-radius: 10px;">
@@ -68,7 +77,7 @@ async function sendOrderNotificationEmail(order: Order) {
         <table style="width: 100%; margin-top: 20px;">
           <thead>
             <tr>
-              <th style="text-align: left; color: #a855f7;">Projeto</th>
+              <th style="text-align: left; color: #a855f7;">Item/Projeto</th>
               <th style="text-align: center; color: #a855f7;">Qtd</th>
               <th style="text-align: right; color: #a855f7;">Valor</th>
             </tr>
@@ -76,7 +85,7 @@ async function sendOrderNotificationEmail(order: Order) {
           <tbody>${itemsHtml}</tbody>
         </table>
         <div style="text-align: center; margin-top: 30px;">
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL}/admin/orders" style="background: #a855f7; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">VER NO PAINEL</a>
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://zyntra3d.onrender.com'}/admin/orders" style="background: #a855f7; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">GERENCIAR NO PAINEL</a>
         </div>
       </div>
     `,
@@ -85,7 +94,7 @@ async function sendOrderNotificationEmail(order: Order) {
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error('[Zyntra] Erro e-mail:', error);
+    console.error('[Zyntra] Erro ao enviar e-mail admin:', error);
   }
 }
 
@@ -118,6 +127,7 @@ export async function POST(req: NextRequest) {
             const updatedOrder = { id: orderSnap.id, ...orderData, paymentId };
             await updateStock(updatedOrder);
             await sendOrderNotificationEmail(updatedOrder);
+            await sendWhatsAppNotification(updatedOrder);
             
             if (userId) {
               const cartRef = collection(db, "carts", userId, "items");

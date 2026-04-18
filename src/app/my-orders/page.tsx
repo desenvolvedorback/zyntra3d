@@ -9,11 +9,10 @@ import type { Order } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Package, Truck, ExternalLink, Printer, CheckCircle2, Clock, AlertCircle, Download, FileCode } from "lucide-react";
+import { Loader2, Package, Truck, Printer, CheckCircle2, Clock, AlertCircle, Download, FileCode } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
-import Image from "next/image";
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: 'Aguardando Pagamento', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', icon: Clock },
@@ -37,7 +36,7 @@ export default function MyOrdersPage() {
     const q = query(
       collection(db, "orders"),
       where("customer.id", "==", user.uid),
-      orderBy("createdAt", "desc")
+      orderBy("orderNumber", "desc")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -68,7 +67,7 @@ export default function MyOrdersPage() {
     return (
       <div className="container py-20 text-center space-y-4">
         <h2 className="text-2xl font-headline text-primary">Acesso Restrito</h2>
-        <p>Faça login para ver seu histórico de pedidos 3D.</p>
+        <p>Faça login para ver seu histórico de pedidos na Zyntra 3D.</p>
         <Button asChild><Link href="/login">Ir para Login</Link></Button>
       </div>
     );
@@ -140,7 +139,7 @@ export default function MyOrdersPage() {
                     <div className="flex flex-col gap-3">
                       <Button asChild className="w-full bg-primary hover:bg-primary/80">
                         <Link href={`/order-confirmation/${order.id}`}>
-                           {isPaid ? "Status de Produção" : "Pagar Agora"}
+                           {isPaid ? "Status da Produção" : "Pagar Agora"}
                         </Link>
                       </Button>
                       
@@ -160,7 +159,7 @@ export default function MyOrdersPage() {
                         <AlertCircle className="h-4 w-4 text-accent" />
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Sua peça está sendo preparada com carinho por nossa equipe técnica e logo entrará na fila de impressão.
+                        Sua peça está sendo preparada com carinho por nossa equipe técnica e logo entrará na fila de fatiamento.
                       </p>
                     </div>
                   )}
@@ -171,8 +170,8 @@ export default function MyOrdersPage() {
         ) : (
           <div className="text-center py-24 bg-secondary/10 rounded-2xl border border-dashed border-white/10">
             <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-20" />
-            <p className="text-lg font-semibold text-muted-foreground">Você ainda não realizou nenhum pedido.</p>
-            <Button asChild className="mt-6 bg-primary"><Link href="/products">Ver Catálogo 3D</Link></Button>
+            <p className="text-lg font-semibold text-muted-foreground">Você ainda não realizou nenhum pedido 3D.</p>
+            <Button asChild className="mt-6 bg-primary"><Link href="/products">Ver Catálogo Zyntra</Link></Button>
           </div>
         )}
       </div>

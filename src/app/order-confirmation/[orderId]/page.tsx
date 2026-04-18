@@ -2,16 +2,13 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Package, Truck, Zap, AlertCircle } from "lucide-react";
+import { CheckCircle2, MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Package, Truck, Zap } from "lucide-react";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { formatInTimeZone } from 'date-fns-tz';
-import { ptBR } from "date-fns/locale";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -20,7 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const STATUS_STEPS = [
   { id: 'paid', label: 'Pago', icon: Zap },
-  { id: 'processing', label: 'Preparo', icon: Clock },
+  { id: 'processing', label: 'Fatiamento', icon: Clock },
   { id: 'printing', label: 'Impressão', icon: Printer },
   { id: 'ready', label: 'Acabamento', icon: Package },
   { id: 'shipped', label: 'Enviado', icon: Truck },
@@ -34,34 +31,32 @@ export default function OrderConfirmationPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchOrder() {
-      if (!orderId) return;
-      try {
-        const docRef = doc(db, "orders", orderId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setOrder({ 
-            id: docSnap.id,
-            ...data,
-            createdAt: data.createdAt?.toDate() || new Date(),
-          } as Order);
-        }
-      } catch (error) {
-        console.error("Error fetching order:", error);
-      } finally {
-        setLoading(false);
+    if (!orderId) return;
+    
+    const docRef = doc(db, "orders", orderId);
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setOrder({ 
+          id: docSnap.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+        } as Order);
       }
-    }
-    fetchOrder();
+      setLoading(false);
+    }, (error) => {
+      console.error("Error listening to order:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [orderId]);
 
   if (loading) {
     return (
       <div className="container py-20 flex flex-col items-center justify-center gap-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-muted-foreground animate-pulse">Sincronizando seu projeto 3D...</p>
+        <p className="text-muted-foreground animate-pulse">Sincronizando status na oficina...</p>
       </div>
     );
   }
@@ -69,9 +64,9 @@ export default function OrderConfirmationPage() {
   if (!order) {
     return (
       <div className="container py-20 text-center space-y-4">
-        <h2 className="text-4xl font-headline text-primary">Projeto não localizado</h2>
-        <p className="text-muted-foreground">Não encontramos o pedido no sistema Zyntra.</p>
-        <Button asChild><Link href="/products">Voltar para a Oficina</Link></Button>
+        <h2 className="text-4xl font-headline text-primary">Pedido não localizado</h2>
+        <p className="text-muted-foreground">Não encontramos o pedido informado no sistema Zyntra.</p>
+        <Button asChild><Link href="/products">Voltar para a Loja</Link></Button>
       </div>
     );
   }
@@ -80,9 +75,9 @@ export default function OrderConfirmationPage() {
   const digitalItems = order.items.filter(item => item.digitalLink);
   const hasPhysicalItems = order.items.some(item => !item.digitalLink);
 
-  const phoneNumber = "5514998561335";
-  const message = `Olá Zyntra 3D! Gostaria de confirmar meu pedido.\n\n*Nº do Pedido:* ${order.orderNumber}\n*Status:* ${order.status}\n*Total:* R$ ${order.total.toFixed(2)}`;
-  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+  const adminPhone = "5514991023986";
+  const message = `Olá Zyntra 3D! Gostaria de falar sobre o meu pedido.\n\n*Nº do Pedido:* ${order.orderNumber}\n*Status:* ${order.status}`;
+  const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
 
   return (
     <div className="container mx-auto max-w-4xl py-12 md:py-20 px-4">
@@ -91,9 +86,9 @@ export default function OrderConfirmationPage() {
             <div className="p-4 rounded-full bg-primary/10 mb-4 animate-bounce">
               <Printer className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="text-4xl font-headline text-primary">Status do Pedido</CardTitle>
+            <CardTitle className="text-4xl font-headline text-primary">Status da Sua Ideia</CardTitle>
             <CardDescription className="text-lg">
-                Projeto #{order.orderNumber} • Acompanhe cada camada aqui.
+                Pedido #{order.orderNumber} • Acompanhe o progresso camada a camada.
             </CardDescription>
         </CardHeader>
         
@@ -102,12 +97,14 @@ export default function OrderConfirmationPage() {
             {hasPhysicalItems && (
               <div className="space-y-6">
                 <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase tracking-widest text-center justify-center">
-                  Progresso na Oficina
+                  Linha de Produção
                 </h3>
                 <div className="flex justify-between items-start relative max-w-2xl mx-auto">
                    <div className="absolute top-5 left-0 right-0 h-0.5 bg-white/5 -z-0" />
                    {STATUS_STEPS.map((step, idx) => {
-                     const isPast = ['paid', 'processing', 'printing', 'ready', 'shipped', 'delivered'].indexOf(order.status) >= ['paid', 'processing', 'printing', 'ready', 'shipped'].indexOf(step.id);
+                     const statusIndex = ['paid', 'processing', 'printing', 'ready', 'shipped', 'delivered'].indexOf(order.status);
+                     const stepIndex = ['paid', 'processing', 'printing', 'ready', 'shipped'].indexOf(step.id);
+                     const isPast = statusIndex >= stepIndex;
                      
                      return (
                        <div key={step.id} className="flex flex-col items-center gap-2 relative z-10 w-1/5">
@@ -135,7 +132,7 @@ export default function OrderConfirmationPage() {
                       </Button>
                     ))}
                  </div>
-                 <p className="text-[10px] text-muted-foreground text-center italic">Você tem acesso vitalício a esses arquivos através da sua conta Zyntra.</p>
+                 <p className="text-[10px] text-muted-foreground text-center italic">Acesse seus arquivos sempre que quiser na seção "Meus Pedidos".</p>
               </div>
             )}
 
@@ -143,25 +140,17 @@ export default function OrderConfirmationPage() {
             {order.status === 'shipped' && order.trackingLink ? (
               <Alert className="bg-indigo-500/10 border-indigo-500/30">
                 <Truck className="h-4 w-4 text-indigo-500" />
-                <AlertTitle className="text-indigo-500 font-bold">Pedido em Trânsito!</AlertTitle>
+                <AlertTitle className="text-indigo-500 font-bold">Pedido Enviado!</AlertTitle>
                 <AlertDescription>
-                  Seu projeto já saiu da oficina. <a href={order.trackingLink} target="_blank" className="underline font-bold">Clique aqui para rastrear o envio em tempo real.</a>
-                </AlertDescription>
-              </Alert>
-            ) : order.status === 'shipped' ? (
-               <Alert className="bg-amber-500/10 border-amber-500/30">
-                <Truck className="h-4 w-4 text-amber-500" />
-                <AlertTitle className="text-amber-500 font-bold">Saiu para Entrega</AlertTitle>
-                <AlertDescription>
-                  Seu pedido está com o entregador Zyntra Logística. Você será notificado ao chegar em seu endereço.
+                  Seu projeto já saiu da oficina. <a href={order.trackingLink} target="_blank" className="underline font-bold">Acompanhe a rota de entrega clicando aqui.</a>
                 </AlertDescription>
               </Alert>
             ) : hasPhysicalItems && (
               <Alert className="bg-primary/10 border-primary/20">
                 <Clock className="h-4 w-4 text-primary" />
-                <AlertTitle className="text-primary font-bold">Aguardando Postagem</AlertTitle>
+                <AlertTitle className="text-primary font-bold">Aguardando Envio</AlertTitle>
                 <AlertDescription>
-                  Seu projeto ainda está em fase de produção ou acabamento. O link de rastreio aparecerá aqui assim que for postado.
+                  Sua peça está na fase de {order.status === 'ready' ? 'embalagem final' : 'produção técnica'}. Você receberá o link da rota assim que o entregador sair.
                 </AlertDescription>
               </Alert>
             )}
@@ -180,10 +169,10 @@ export default function OrderConfirmationPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <div className="space-y-4">
                   <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase">
-                    <MapPin className="h-4 w-4" /> Logística de Entrega
+                    <MapPin className="h-4 w-4" /> Endereço de Entrega
                   </h3>
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5 h-24 flex flex-col justify-center">
-                    <p className="font-medium">{order.delivery ? "Entrega programada em Botucatu" : "Retirada em Unidade Zyntra"}</p>
+                    <p className="font-medium">{order.delivery ? "Zyntra Logística - Botucatu" : "Retirada na Unidade Técnica"}</p>
                     {order.delivery && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order.location}</p>}
                   </div>
                </div>
@@ -193,7 +182,7 @@ export default function OrderConfirmationPage() {
                   </h3>
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5 h-24 flex flex-col justify-center">
                      <Badge className={`w-fit py-1 px-4 uppercase ${isPaid ? 'bg-green-500/20 text-green-500' : 'bg-amber-500/20 text-amber-500'}`}>
-                        {order.status === 'pending' ? 'Aguardando Pagamento' : "Pagamento Confirmado"}
+                        {order.status === 'pending' ? 'Aguardando Pagamento' : "Pago com Sucesso"}
                      </Badge>
                   </div>
                </div>
@@ -212,12 +201,12 @@ export default function OrderConfirmationPage() {
                       ))}
                       {order.delivery && (
                            <TableRow className="border-white/5">
-                              <TableCell className="text-muted-foreground italic">Zyntra Logística - Taxa KM</TableCell>
+                              <TableCell className="text-muted-foreground italic">Taxa de Logística Inteligente</TableCell>
                               <TableCell className="text-right">R$ {order.deliveryFee.toFixed(2)}</TableCell>
                           </TableRow>
                       )}
                       <TableRow className="bg-primary/5 hover:bg-primary/5 border-none">
-                        <TableCell className="font-bold text-lg text-primary">TOTAL PAGO</TableCell>
+                        <TableCell className="font-bold text-lg text-primary">TOTAL DO INVESTIMENTO</TableCell>
                         <TableCell className="text-right font-bold text-lg text-primary">R$ {order.total.toFixed(2)}</TableCell>
                       </TableRow>
                   </TableBody>
@@ -225,27 +214,24 @@ export default function OrderConfirmationPage() {
                </div>
             </div>
 
-            {!isPaid && (
-              <div className="text-center space-y-6 pt-4 border-t border-white/5">
-                  <h4 className="font-headline text-3xl text-primary">Aguardando Pagamento</h4>
-                  <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                    Caso tenha pago via Pix manual ou queira agilizar a produção, envie o comprovante no nosso canal técnico.
-                  </p>
-                  <Button asChild size="lg" className="bg-green-600 hover:bg-green-700 text-white w-full h-16 text-xl shadow-xl">
-                      <Link href={whatsappUrl} target="_blank">
-                          <MessageCircle className="mr-2 h-6 w-6" />
-                          Confirmar Pagamento
-                      </Link>
-                  </Button>
-              </div>
-            )}
+            <div className="text-center space-y-6 pt-4 border-t border-white/5">
+                <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                  Alguma dúvida técnica sobre o fatiamento ou material? Fale direto com nossos makers.
+                </p>
+                <Button asChild size="lg" className="bg-green-600 hover:bg-green-700 text-white w-full h-16 text-xl shadow-xl">
+                    <Link href={whatsappUrl} target="_blank">
+                        <MessageCircle className="mr-2 h-6 w-6" />
+                        Suporte Técnico WhatsApp
+                    </Link>
+                </Button>
+            </div>
         </CardContent>
         <CardFooter className="p-8 border-t border-white/5 flex flex-col sm:flex-row gap-4 justify-between">
             <Button asChild variant="ghost" className="text-muted-foreground">
                 <Link href="/products">Continuar na Oficina</Link>
             </Button>
             <Button asChild variant="outline" className="border-primary/20">
-                <Link href="/my-orders">Meus Pedidos</Link>
+                <Link href="/my-orders">Ver Meus Pedidos</Link>
             </Button>
         </CardFooter>
       </Card>
