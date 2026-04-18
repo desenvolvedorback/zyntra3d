@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -28,7 +27,13 @@ export function CartItem({ item }: CartItemProps) {
   return (
     <div className="flex items-center gap-4 py-4">
       <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-white/5">
-        <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
+        <Image 
+          src={item.imageUrl} 
+          alt={item.name} 
+          fill 
+          className="object-cover"
+          sizes="80px"
+        />
       </div>
       <div className="flex-grow">
         <h4 className="font-semibold text-primary line-clamp-1">{item.name}</h4>

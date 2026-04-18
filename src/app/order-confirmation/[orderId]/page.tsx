@@ -45,10 +45,14 @@ export default function OrderConfirmationPage() {
         
         setOrder(orderData);
 
-        // Fallback: Se o item for digital mas não tiver o link no pedido, tenta buscar no produto original
+        // Check for digital links even if they were not in the order snapshot
         const links: Record<string, string> = {};
         for (const item of orderData.items) {
-          if ((item.isDigital || item.title.toLowerCase().includes('pack')) && !item.digitalLink) {
+          const isDigitalSearch = item.isDigital || 
+                                  item.title.toLowerCase().includes('pack') || 
+                                  item.title.toLowerCase().includes('arquivo');
+          
+          if (isDigitalSearch && !item.digitalLink) {
             try {
               const prodRef = doc(db, "products", item.id);
               const prodSnap = await getDoc(prodRef);
@@ -206,17 +210,6 @@ export default function OrderConfirmationPage() {
                   </Alert>
                 )}
               </>
-            )}
-
-            {order.previewImageUrl && (
-              <div className="space-y-4">
-                <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase tracking-widest">
-                  <ImageIcon className="h-4 w-4" /> Resultado da Impressão
-                </h3>
-                <div className="relative aspect-video rounded-2xl overflow-hidden border border-primary/20 shadow-2xl">
-                  <Image src={order.previewImageUrl} alt="Preview do Pedido" fill className="object-cover" sizes="(max-width: 768px) 100vw, 800px" />
-                </div>
-              </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

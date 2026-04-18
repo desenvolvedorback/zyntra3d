@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -60,7 +59,6 @@ export function CartSheet() {
 
   const computedDeliveryFee = useMemo(() => {
     if (!delivery) return 0;
-    // Se o usuário informar KM, o cálculo é dinâmico, senão usa a taxa fixa da promoção
     const baseKmFee = distanceKm <= 5 ? 0 : distanceKm * 1.5;
     return distanceKm > 0 ? baseKmFee : finalDeliveryFee;
   }, [delivery, distanceKm, finalDeliveryFee]);
@@ -141,6 +139,7 @@ export function CartSheet() {
 
         await setDoc(orderRef, orderPayload);
 
+        // PASS ONLY PLAIN DATA TO SERVER ACTION
         const checkoutUrl = await mercadoPagoCheckout({
           items: orderPayload.items.map(i => ({
             id: i.id,
@@ -148,7 +147,13 @@ export function CartSheet() {
             quantity: i.quantity,
             unit_price: i.unit_price
           })),
-          userProfile,
+          user: {
+            uid: userProfile.uid,
+            email: userProfile.email,
+            displayName: userProfile.displayName,
+            cpf: userProfile.cpf,
+            phone: userProfile.phone || contactPhone || ""
+          },
           deliveryFee: orderPayload.deliveryFee,
           location: orderPayload.location,
           orderId: orderRef.id,
@@ -157,9 +162,13 @@ export function CartSheet() {
           contactPhone: orderPayload.contactPhone,
         });
 
-        if (checkoutUrl) window.location.href = checkoutUrl;
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
+        } else {
+          throw new Error("Erro ao gerar link de pagamento.");
+        }
       } catch (error: any) {
-        toast({ variant: "destructive", title: "Falha na Produção", description: "Não conseguimos iniciar o checkout. Tente novamente." });
+        toast({ variant: "destructive", title: "Falha na Produção", description: error.message || "Não conseguimos iniciar o checkout. Tente novamente." });
       }
     });
   }

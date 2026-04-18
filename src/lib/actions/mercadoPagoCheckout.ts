@@ -12,7 +12,14 @@ interface CheckoutItem {
 
 interface MercadoPagoCheckoutArgs {
   items: CheckoutItem[];
-  userProfile: UserProfile;
+  // Sanitize user profile to be a plain object
+  user: {
+    uid: string;
+    email: string | null;
+    displayName: string | null;
+    cpf: string;
+    phone: string;
+  };
   deliveryFee?: number;
   location?: string;
   orderId: string;
@@ -22,9 +29,8 @@ interface MercadoPagoCheckoutArgs {
 }
 
 export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promise<string | null> {
-  const { items, userProfile, deliveryFee = 0, location = '', orderId, orderNumber, observation = '', contactPhone = '' } = args;
+  const { items, user, deliveryFee = 0, location = '', orderId, orderNumber, observation = '', contactPhone = '' } = args;
 
-  // Chaves de produção oficiais Zyntra 3D
   const accessToken = 'APP_USR-4873657725416680-041519-a1a2d79c61cee7f1cfa105b8bd7e2db4-99290797';
   
   try {
@@ -33,7 +39,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zyntra3d.onrender.com';
 
-    const nameParts = userProfile.displayName?.split(' ') || ['Maker', 'Zyntra'];
+    const nameParts = user.displayName?.split(' ') || ['Maker', 'Zyntra'];
     const firstName = nameParts[0];
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Zyntra';
 
@@ -42,7 +48,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       return p.length >= 10 ? p : "14999999999";
     };
     
-    const userPhone = cleanPhone(userProfile.phone || contactPhone || "");
+    const userPhone = cleanPhone(user.phone || contactPhone || "");
     const areaCode = userPhone.substring(0, 2) || "14";
     const phoneNumber = userPhone.substring(2) || "999999999";
 
@@ -76,14 +82,14 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       payer: {
         name: firstName,
         surname: lastName,
-        email: userProfile.email || 'contato@zyntra.com',
+        email: user.email || 'contato@zyntra.com',
         phone: {
           area_code: areaCode,
           number: phoneNumber,
         },
         identification: {
           type: 'CPF',
-          number: cleanCpf(userProfile.cpf || ""),
+          number: cleanCpf(user.cpf || ""),
         },
       },
       back_urls: {
@@ -95,21 +101,16 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       notification_url: `${siteUrl}/api/mp-webhook`,
       metadata: {
         order_id: orderId,
-        user_id: userProfile.uid,
+        user_id: user.uid,
       },
       external_reference: orderId,
     };
 
     const result = await preference.create({ body: preferenceBody });
-    
-    if (!result.init_point) {
-      throw new Error("Ponto de iniciação não retornado pelo Mercado Pago.");
-    }
-
-    return result.init_point;
+    return result.init_point || null;
 
   } catch (error: any) {
     console.error("[Zyntra MP Error]:", error.message);
-    throw new Error(error.message || "Erro ao conectar com o Mercado Pago.");
+    return null;
   }
 }
