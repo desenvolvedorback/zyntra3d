@@ -2,12 +2,12 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Order } from "@/lib/types";
+import type { Order, Product } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Package, Truck, Zap } from "lucide-react";
+import { MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Package, Truck, Zap, AlertCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -29,19 +29,42 @@ export default function OrderConfirmationPage() {
   
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resolvedDigitalLinks, setResolvedDigitalLinks] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!orderId) return;
     
     const docRef = doc(db, "orders", orderId);
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+    const unsubscribe = onSnapshot(docRef, async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setOrder({ 
+        const orderData = { 
           id: docSnap.id,
           ...data,
           createdAt: data.createdAt?.toDate() || new Date(),
-        } as Order);
+        } as Order;
+        
+        setOrder(orderData);
+
+        // Fallback: Se o item for digital mas não tiver o link no pedido, tenta buscar no produto original
+        const links: Record<string, string> = {};
+        for (const item of orderData.items) {
+          if ((item.isDigital || item.title.toLowerCase().includes('pack')) && !item.digitalLink) {
+            try {
+              const prodRef = doc(db, "products", item.id);
+              const prodSnap = await getDoc(prodRef);
+              if (prodSnap.exists()) {
+                const prodData = prodSnap.data() as Product;
+                if (prodData.digitalLink) {
+                  links[item.id] = prodData.digitalLink;
+                }
+              }
+            } catch (e) {
+              console.error("Erro ao buscar link de fallback:", e);
+            }
+          }
+        }
+        setResolvedDigitalLinks(links);
       }
       setLoading(false);
     }, (error) => {
@@ -73,10 +96,10 @@ export default function OrderConfirmationPage() {
 
   const isPaid = order.status !== 'pending' && order.status !== 'cancelled';
   
-  // Detecção robusta de itens digitais (mesmo que o campo isDigital tenha falhado na gravação por algum motivo)
   const digitalItems = order.items.filter(item => 
     item.isDigital || 
     !!item.digitalLink || 
+    !!resolvedDigitalLinks[item.id] ||
     item.title.toLowerCase().includes('pack') || 
     item.title.toLowerCase().includes('arquivo')
   );
@@ -105,7 +128,6 @@ export default function OrderConfirmationPage() {
         </CardHeader>
         
         <CardContent className="p-8 space-y-10">
-            {/* Status Visual Timeline para Itens Físicos */}
             {hasPhysicalItems && (
               <div className="space-y-6">
                 <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase tracking-widest text-center justify-center">
@@ -133,7 +155,6 @@ export default function OrderConfirmationPage() {
               </div>
             )}
 
-            {/* DOWNLOADS - EXIBIÇÃO PRIORITÁRIA SE PAGO */}
             {isPaid && digitalItems.length > 0 && (
               <div className="p-6 bg-green-500/10 border-2 border-green-500/40 rounded-2xl space-y-6 animate-in zoom-in-95 duration-500">
                  <div className="flex items-center justify-between">
@@ -143,23 +164,29 @@ export default function OrderConfirmationPage() {
                     <Badge className="bg-green-600">DOWNLOAD IMEDIATO</Badge>
                  </div>
                  <div className="grid gap-4">
-                    {digitalItems.map((item, idx) => (
-                      <Button key={idx} asChild className="w-full bg-green-600 hover:bg-green-700 h-14 shadow-lg text-lg font-bold group">
-                        <a href={item.digitalLink || "#"} target="_blank">
-                          <Download className="mr-2 h-5 w-5 group-hover:animate-bounce" />
-                          Baixar: {item.title}
-                        </a>
-                      </Button>
-                    ))}
+                    {digitalItems.map((item, idx) => {
+                      const finalLink = item.digitalLink || resolvedDigitalLinks[item.id];
+                      return (
+                        <Button key={idx} asChild className="w-full bg-green-600 hover:bg-green-700 h-14 shadow-lg text-lg font-bold group">
+                          <a href={finalLink || "#"} target="_blank" rel="noopener noreferrer">
+                            <Download className="mr-2 h-5 w-5 group-hover:animate-bounce" />
+                            Baixar: {item.title}
+                          </a>
+                        </Button>
+                      );
+                    })}
                  </div>
+                 {!Object.values(resolvedDigitalLinks).length && !order.items.some(i => i.digitalLink) && (
+                   <p className="text-xs text-destructive text-center font-bold">
+                     Link não encontrado. Por favor, acione o suporte técnico abaixo.
+                   </p>
+                 )}
                  <p className="text-[11px] text-muted-foreground text-center italic leading-relaxed">
-                   Os links acima levam ao nosso armazenamento seguro no Google Drive/Cloud. <br/>
-                   Você também pode acessar esses arquivos em "Meus Pedidos" no seu perfil.
+                   Os links levam ao nosso armazenamento seguro. Você também pode acessar esses arquivos em "Meus Pedidos".
                  </p>
               </div>
             )}
 
-            {/* Alertas de Logística para Físicos */}
             {hasPhysicalItems && (
               <>
                 {order.status === 'shipped' && order.trackingLink ? (
@@ -209,8 +236,8 @@ export default function OrderConfirmationPage() {
                     <Clock className="h-4 w-4" /> Status Financeiro
                   </h3>
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5 h-24 flex flex-col justify-center">
-                     <Badge className={`w-fit py-1 px-4 uppercase ${isPaid ? 'bg-green-500/20 text-green-500' : 'bg-amber-500/20 text-amber-500'}`}>
-                        {order.status === 'pending' ? 'Aguardando Pagamento' : "Pago com Sucesso"}
+                     <Badge className={`w-fit py-1 px-4 uppercase ${isPaid ? 'bg-green-500/20 text-green-500' : 'bg-destructive/20 text-destructive'}`}>
+                        {order.status === 'pending' ? 'Aguardando Pagamento' : order.status === 'cancelled' ? 'Cancelado' : "Pago com Sucesso"}
                      </Badge>
                   </div>
                </div>
@@ -225,7 +252,7 @@ export default function OrderConfirmationPage() {
                           <TableRow key={index} className="border-white/5">
                               <TableCell className="font-medium">
                                 {item.title} <span className="text-accent">x{item.quantity}</span>
-                                {(item.isDigital || !!item.digitalLink) && <Badge variant="outline" className="ml-2 text-[8px] h-3 uppercase border-accent text-accent">Digital</Badge>}
+                                {(item.isDigital || item.title.toLowerCase().includes('pack')) && <Badge variant="outline" className="ml-2 text-[8px] h-3 uppercase border-accent text-accent">Digital</Badge>}
                               </TableCell>
                               <TableCell className="text-right">R$ {(item.unit_price * item.quantity).toFixed(2)}</TableCell>
                           </TableRow>

@@ -39,7 +39,7 @@ export default function PromotionsPage() {
           return {
             id: doc.id,
             ...data,
-            createdAt: data.createdAt?.toDate(),
+            createdAt: data.createdAt?.toDate() || new Date(),
             productName: data.productId ? productsMap.get(data.productId) : undefined,
           } as PromotionWithProductName;
         });

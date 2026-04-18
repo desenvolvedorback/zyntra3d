@@ -66,11 +66,8 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
         toast({ title: "Sucesso", description: "Promoção criada com sucesso." });
       }
       
-      // Pequeno delay para garantir que o Firestore atualizou antes de redirecionar
-      setTimeout(() => {
-        router.push("/admin/promotions");
-        router.refresh();
-      }, 500);
+      router.push("/admin/promotions");
+      router.refresh();
 
     } catch (error: any) {
       console.error("Erro ao salvar promoção:", error);
