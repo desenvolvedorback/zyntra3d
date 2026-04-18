@@ -16,8 +16,8 @@ export function Logo({ className }: { className?: string }) {
       <Image 
         src="https://files.catbox.moe/4my793.png"
         alt="Zyntra 3D Logo"
-        width={100}
-        height={50}
+        width={80}
+        height={40}
         className="object-contain"
         priority
         unoptimized

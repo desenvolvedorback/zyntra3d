@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { createContext, useCallback, useEffect, useState, useContext, useMemo, type ReactNode } from "react";
@@ -32,8 +31,6 @@ export const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export const useCart = () => {
   const context = useContext(CartContext);
-  // Durante o SSR do Next.js 15, o contexto pode ser undefined. 
-  // Retornamos undefined em vez de estourar erro para permitir hidratação segura.
   return context;
 };
 
@@ -56,36 +53,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  // Monitorar Promoções de Entrega
+  // Monitorar Promoções em tempo real
   useEffect(() => {
     if (!isMounted) return;
-    const q = query(
-      collection(db, "promotions"), 
-      where("isActive", "==", true), 
-      where("type", "==", "delivery")
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const promos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-        setDeliveryPromotion(promos[0]);
-      } else {
-        setDeliveryPromotion(null);
-      }
-    });
-    return () => unsubscribe();
-  }, [isMounted]);
-
-  // Monitorar Promoções de Produtos
-  useEffect(() => {
-    if (!isMounted) return;
-    const q = query(
-      collection(db, "promotions"), 
-      where("isActive", "==", true), 
-      where("type", "==", "product")
-    );
+    const q = query(collection(db, "promotions"), where("isActive", "==", true));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const promos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
-      setProductPromotions(promos);
+      setDeliveryPromotion(promos.find(p => p.type === 'delivery') || null);
+      setProductPromotions(promos.filter(p => p.type === 'product'));
     });
     return () => unsubscribe();
   }, [isMounted]);
@@ -93,7 +68,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const getDiscountedPrice = useCallback((item: CartItem) => {
     const promo = productPromotions.find(p => p.productId === item.productId);
     if (!promo) return item.price;
-
     if (promo.discountType === 'percentage') {
       return item.price * (1 - promo.discountValue / 100);
     } else {
@@ -101,73 +75,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [productPromotions]);
 
-  const getLocalCart = useCallback((): CartItem[] => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const localData = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-      return localData ? JSON.parse(localData) : [];
-    } catch (error) {
-      return [];
-    }
-  }, []);
-
-  const setLocalCart = useCallback((items: CartItem[]) => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
-    } catch (error) {}
-  }, []);
-
-  const mergeAndClearLocalCart = useCallback(async (userId: string) => {
-    const localCart = getLocalCart();
-    if (localCart.length === 0) return;
-
-    const cartRef = collection(db, "carts", userId, "items");
-    const batch = writeBatch(db);
-
-    for (const localItem of localCart) {
-        const itemRef = doc(cartRef, localItem.productId);
-        batch.set(itemRef, localItem, { merge: true });
-    }
-
-    await batch.commit();
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(LOCAL_STORAGE_KEY);
-    }
-  }, [getLocalCart]);
-
   useEffect(() => {
     if (authLoading || !isMounted) return;
-
     if (user) {
       setLoading(true);
-      mergeAndClearLocalCart(user.uid).then(() => {
-        const cartRef = collection(db, "carts", user.uid, "items");
-        const unsubscribe = onSnapshot(cartRef, (snapshot) => {
-          const cloudItems = snapshot.docs.map(d => d.data() as CartItem);
-          setCartItems(cloudItems);
-          setLoading(false);
-        }, () => setLoading(false));
-        return () => unsubscribe();
-      });
+      const cartRef = collection(db, "carts", user.uid, "items");
+      const unsubscribe = onSnapshot(cartRef, (snapshot) => {
+        setCartItems(snapshot.docs.map(d => d.data() as CartItem));
+        setLoading(false);
+      }, () => setLoading(false));
+      return () => unsubscribe();
     } else {
-      setCartItems(getLocalCart());
+      const localData = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+      setCartItems(localData ? JSON.parse(localData) : []);
       setLoading(false);
     }
-  }, [user, authLoading, isMounted, getLocalCart, mergeAndClearLocalCart]);
+  }, [user, authLoading, isMounted]);
 
   const addToCart = async (product: any, quantity = 1) => {
     if (product.stock === 0) {
-      toast({ variant: "destructive", title: "Fora de Estoque", description: `${product.name} não está disponível.` });
+      toast({ variant: "destructive", title: "Fora de Estoque" });
       return;
     }
     
-    const basePrice = product.price;
-
     const newItem: CartItem = { 
       productId: product.id,
       name: product.name,
-      price: basePrice, 
+      price: product.price, 
       imageUrl: product.imageUrl,
       quantity,
       category: product.category,
@@ -177,49 +111,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     if (user) {
       const itemRef = doc(db, "carts", user.uid, "items", product.id);
-      const docSnap = await getDoc(itemRef);
-      const existingQuantity = docSnap.exists() ? (docSnap.data() as CartItem).quantity : 0;
-      newItem.quantity = existingQuantity + quantity;
       await setDoc(itemRef, newItem, { merge: true });
     } else {
-      const currentItems = getLocalCart();
-      const existingItem = currentItems.find(item => item.productId === product.id);
-      let newCart: CartItem[];
-      
-      if (existingItem) {
-        newCart = currentItems.map(item => item.productId === product.id ? {...item, quantity: item.quantity + quantity} : item);
-      } else {
-        newCart = [...currentItems, newItem];
-      }
-      setLocalCart(newCart);
+      const newCart = [...cartItems, newItem];
       setCartItems(newCart);
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newCart));
     }
-    
-    toast({ title: "Adicionado!", description: `${product.name} está no seu carrinho.` });
+    toast({ title: "Adicionado ao carrinho!" });
   };
 
   const removeFromCart = async (productId: string) => {
     if (user) {
       await deleteDoc(doc(db, "carts", user.uid, "items", productId));
     } else {
-      const updatedCart = cartItems.filter(item => item.productId !== productId);
-      setCartItems(updatedCart);
-      setLocalCart(updatedCart);
+      const updated = cartItems.filter(i => i.productId !== productId);
+      setCartItems(updated);
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     }
   };
 
   const updateQuantity = async (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      await removeFromCart(productId);
-      return;
-    }
-
     if (user) {
       await setDoc(doc(db, "carts", user.uid, "items", productId), { quantity }, { merge: true });
     } else {
-      const updatedCart = cartItems.map(item => item.productId === productId ? { ...item, quantity } : item);
-      setCartItems(updatedCart);
-      setLocalCart(updatedCart);
+      const updated = cartItems.map(i => i.productId === productId ? { ...i, quantity } : i);
+      setCartItems(updated);
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     }
   };
 
@@ -232,44 +149,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       await batch.commit();
     } else {
       setCartItems([]);
-      setLocalCart([]);
+      window.localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
-    setDelivery(false);
   };
 
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  
-  const totalPrice = useMemo(() => {
-    return cartItems.reduce((sum, item) => sum + (getDiscountedPrice(item) * item.quantity), 0);
-  }, [cartItems, getDiscountedPrice]);
-
+  const totalPrice = useMemo(() => cartItems.reduce((sum, item) => sum + (getDiscountedPrice(item) * item.quantity), 0), [cartItems, getDiscountedPrice]);
   const finalDeliveryFee = useMemo(() => {
     if (!deliveryPromotion) return baseDeliveryFee;
-    if (deliveryPromotion.discountType === 'fixed') {
-      return Math.max(0, baseDeliveryFee - deliveryPromotion.discountValue);
-    }
-    return baseDeliveryFee * (1 - deliveryPromotion.discountValue / 100);
+    return deliveryPromotion.discountType === 'fixed' ? Math.max(0, baseDeliveryFee - deliveryPromotion.discountValue) : baseDeliveryFee * (1 - deliveryPromotion.discountValue / 100);
   }, [baseDeliveryFee, deliveryPromotion]);
 
-  const value = {
-    cartItems,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    clearCart,
-    cartCount,
-    totalPrice,
-    loading,
-    delivery,
-    setDelivery,
-    location,
-    setLocation,
-    deliveryFee: baseDeliveryFee,
-    finalDeliveryFee,
-    deliveryPromotion,
-    productPromotions,
-    getDiscountedPrice
-  };
-
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart, cartCount: cartItems.length, totalPrice, loading, delivery, setDelivery, location, setLocation, deliveryFee: baseDeliveryFee, finalDeliveryFee, deliveryPromotion, productPromotions, getDiscountedPrice }}>{children}</CartContext.Provider>;
 }

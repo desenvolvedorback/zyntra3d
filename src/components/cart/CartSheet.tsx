@@ -30,20 +30,21 @@ import { doc, runTransaction, collection, setDoc, serverTimestamp } from "fireba
 
 export function CartSheet() {
   const cartContext = useCart();
-  
+  if (!cartContext) return null;
+
   const {
-    cartItems = [],
-    cartCount = 0,
-    totalPrice = 0,
-    clearCart = () => {},
-    loading: cartLoading = false,
-    delivery = false,
-    setDelivery = () => {},
-    location = "",
-    setLocation = () => {},
-    finalDeliveryFee = 0,
-    getDiscountedPrice = (item: any) => item.price
-  } = cartContext || {};
+    cartItems,
+    cartCount,
+    totalPrice,
+    clearCart,
+    loading: cartLoading,
+    delivery,
+    setDelivery,
+    location,
+    setLocation,
+    finalDeliveryFee,
+    getDiscountedPrice
+  } = cartContext;
 
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
@@ -61,9 +62,8 @@ export function CartSheet() {
 
   const computedDeliveryFee = useMemo(() => {
     if (!delivery) return 0;
-    const baseKmFee = distanceKm <= 5 ? 0 : distanceKm * 1.5;
-    return distanceKm > 0 ? baseKmFee : finalDeliveryFee;
-  }, [delivery, distanceKm, finalDeliveryFee]);
+    return distanceKm <= 5 ? 0 : distanceKm * 1.5;
+  }, [delivery, distanceKm]);
 
   const finalPrice = totalPrice + computedDeliveryFee;
 
@@ -72,23 +72,6 @@ export function CartSheet() {
   );
 
   const hasPhysicalItems = cartItems.some(item => !item.isDigital);
-
-  const getNextOrderNumber = async (): Promise<number> => {
-    const counterRef = doc(db, "counters", "orderCounter");
-    return await runTransaction(db, async (transaction) => {
-      const counterDoc = await transaction.get(counterRef);
-      let nextNumber;
-      if (!counterDoc.exists()) {
-        nextNumber = 1001;
-        transaction.set(counterRef, { lastNumber: nextNumber });
-      } else {
-        const lastNumber = counterDoc.data().lastNumber || 1000;
-        nextNumber = lastNumber + 1;
-        transaction.update(counterRef, { lastNumber: nextNumber });
-      }
-      return nextNumber;
-    });
-  };
 
   const handleCheckout = async () => {
     if (!user || !userProfile) {
@@ -101,18 +84,12 @@ export function CartSheet() {
       toast({ variant: "destructive", title: "Endereço de Entrega", description: "Informe onde devemos entregar sua peça." });
       return;
     }
-
-    if (hasPersonalized && !fileLink.trim()) {
-      toast({ variant: "destructive", title: "Arquivo do Projeto", description: "Precisamos do link do seu arquivo 3D para modelar." });
-      return;
-    }
     
     startTransition(async () => {
       try {
-        const orderNumber = await getNextOrderNumber();
         const orderRef = doc(collection(db, "orders"));
+        const orderNumber = Math.floor(Math.random() * 9000) + 1000;
 
-        // Garantir gravação de metadados digitais no pedido
         const orderPayload = {
           orderNumber,
           status: 'pending',
@@ -127,22 +104,21 @@ export function CartSheet() {
           })),
           customer: {
             id: userProfile.uid,
-            name: userProfile.displayName || "Usuário Zyntra",
-            email: userProfile.email || "cliente@zyntra.com",
+            name: userProfile.displayName || "Maker",
+            email: userProfile.email || "",
           },
           delivery: hasPhysicalItems && delivery,
           deliveryFee: hasPhysicalItems && delivery ? computedDeliveryFee : 0,
-          location: hasPhysicalItems && delivery ? location : (hasPhysicalItems ? 'Retirada Unidade Botucatu' : 'Entrega Digital'),
-          observation: observation,
-          fileLink: fileLink,
+          location: hasPhysicalItems && delivery ? location : (hasPhysicalItems ? 'Retirada' : 'Digital'),
+          observation,
+          fileLink,
           contactPhone: contactPhone || userProfile.phone || '',
           createdAt: serverTimestamp(),
-          paymentId: null,
         };
 
         await setDoc(orderRef, orderPayload);
 
-        // PASSAR DADOS SIMPLES - Next.js 15 Server Actions não aceitam objetos complexos/vazios
+        // ENVIAR APENAS DADOS PRIMITIVOS PARA A SERVER ACTION
         const checkoutUrl = await mercadoPagoCheckout({
           items: orderPayload.items.map(i => ({
             id: String(i.id),
@@ -152,10 +128,10 @@ export function CartSheet() {
           })),
           user: {
             uid: String(userProfile.uid),
-            email: String(userProfile.email || "cliente@zyntra.com"),
-            displayName: String(userProfile.displayName || "Zyntra Maker"),
-            cpf: String(userProfile.cpf || "00000000000"),
-            phone: String(userProfile.phone || contactPhone || "14991023986")
+            email: String(userProfile.email || ""),
+            displayName: String(userProfile.displayName || "Maker"),
+            cpf: String(userProfile.cpf || ""),
+            phone: String(userProfile.phone || contactPhone || "")
           },
           deliveryFee: Number(orderPayload.deliveryFee),
           location: String(orderPayload.location),
@@ -166,11 +142,10 @@ export function CartSheet() {
         if (checkoutUrl) {
           window.location.href = checkoutUrl;
         } else {
-          throw new Error("Não foi possível gerar o link do Mercado Pago. Tente novamente.");
+          throw new Error("Erro ao conectar com o Mercado Pago.");
         }
       } catch (error: any) {
-        console.error("[Zyntra Checkout]:", error);
-        toast({ variant: "destructive", title: "Falha no Pagamento", description: error.message || "Erro ao conectar com a oficina. Verifique sua conexão." });
+        toast({ variant: "destructive", title: "Erro no Checkout", description: error.message || "Tente novamente." });
       }
     });
   }
@@ -219,7 +194,6 @@ export function CartSheet() {
                       onChange={(e) => setFileLink(e.target.value)}
                       className="bg-black/40 border-white/10"
                     />
-                    <p className="text-[10px] text-muted-foreground italic">Obrigatório para itens personalizados ou logotipos.</p>
                   </div>
                 )}
 
@@ -227,98 +201,45 @@ export function CartSheet() {
                   <div className="space-y-4 p-4 bg-secondary/20 rounded-xl border border-white/5">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="delivery-switch" className="flex flex-col gap-1">
-                        <span className="font-bold flex items-center gap-2">
-                          <Truck className="h-4 w-4 text-accent" /> Logística Botucatu
-                        </span>
-                        <span className="font-normal text-muted-foreground text-[10px]">
-                          Entregas via Zyntra Logística
-                        </span>
+                        <span className="font-bold flex items-center gap-2"><Truck className="h-4 w-4 text-accent" /> Logística Botucatu</span>
                       </Label>
-                      <Switch
-                        id="delivery-switch"
-                        checked={delivery}
-                        onCheckedChange={setDelivery}
-                      />
+                      <Switch id="delivery-switch" checked={delivery} onCheckedChange={setDelivery} />
                     </div>
 
                     {delivery && (
-                      <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Distância (KM)</Label>
-                            <Input
-                              type="number"
-                              value={distanceKm}
-                              onChange={(e) => setDistanceKm(Number(e.target.value))}
-                              className="bg-black/40 h-8"
-                              placeholder="5"
-                            />
+                            <Label className="text-[10px] uppercase font-bold">Distância (KM)</Label>
+                            <Input type="number" value={distanceKm} onChange={(e) => setDistanceKm(Number(e.target.value))} className="bg-black/40 h-8" />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Valor do Frete</Label>
+                            <Label className="text-[10px] uppercase font-bold">Frete</Label>
                             <div className="h-8 flex items-center px-3 bg-primary/10 border border-primary/20 rounded-md text-primary font-bold text-xs">
                               R$ {computedDeliveryFee.toFixed(2)}
                             </div>
                           </div>
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Endereço de Entrega</Label>
-                          <Input
-                            placeholder="Ex: Bairro, Rua e Número"
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                            className="bg-black/40 h-10 text-sm"
-                          />
-                        </div>
+                        <Input placeholder="Endereço Completo" value={location} onChange={(e) => setLocation(e.target.value)} className="bg-black/40 h-10 text-sm" />
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Observações Técnicas</Label>
-                  <Textarea
-                    placeholder="Cor desejada, densidade de preenchimento ou urgência..."
-                    value={observation}
-                    onChange={(e) => setObservation(e.target.value)}
-                    className="bg-black/40 border-white/10"
-                    rows={2}
-                  />
-                </div>
+                <Textarea placeholder="Observações Técnicas..." value={observation} onChange={(e) => setObservation(e.target.value)} className="bg-black/40 border-white/10" rows={2} />
               </div>
             </ScrollArea>
 
             <SheetFooter className="mt-auto border-t border-white/5 pt-4">
               <div className="w-full space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Subtotal de Pedidos</span>
-                    <span>R$ {totalPrice.toFixed(2)}</span>
-                  </div>
-                  {hasPhysicalItems && delivery && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Logística Inteligente</span>
-                      <span>R$ {computedDeliveryFee.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center font-bold text-2xl pt-2 border-t border-white/5 mt-2">
-                    <span className="gradient-text">Investimento Total</span>
-                    <span className="text-primary">R$ {finalPrice.toFixed(2)}</span>
-                  </div>
+                <div className="flex justify-between items-center font-bold text-2xl">
+                  <span className="gradient-text">Total</span>
+                  <span className="text-primary">R$ {finalPrice.toFixed(2)}</span>
                 </div>
-                
-                <Button
-                  className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/80 shadow-xl neon-border transition-all active:scale-95"
-                  onClick={handleCheckout}
-                  disabled={isPending || authLoading}
-                >
-                  {isPending ? <Loader2 className="animate-spin" /> : <><CreditCard className="mr-2 h-5 w-5" /> Finalizar Pedido</>}
+                <Button className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/80" onClick={handleCheckout} disabled={isPending || authLoading}>
+                  {isPending ? <Loader2 className="animate-spin" /> : <><CreditCard className="mr-2 h-5 w-5" /> Pagar com Mercado Pago</>}
                 </Button>
-                
-                <Button variant="ghost" className="w-full text-muted-foreground text-xs" size="sm" onClick={clearCart}>
-                  <Trash2 className="mr-2 h-3 w-3" /> Limpar Carrinho
-                </Button>
+                <Button variant="ghost" className="w-full text-muted-foreground text-xs" size="sm" onClick={clearCart}>Limpar Carrinho</Button>
               </div>
             </SheetFooter>
           </>
@@ -326,12 +247,7 @@ export function CartSheet() {
           <div className="flex flex-1 flex-col items-center justify-center text-center opacity-40">
             <Box className="h-24 w-24 text-muted-foreground mb-4" />
             <p className="text-xl font-semibold">Seu carrinho está vazio</p>
-            <p className="text-sm">Explore o catálogo e adicione itens para começar.</p>
-            <SheetClose asChild>
-              <Button asChild className="mt-8 bg-primary">
-                <a href="/products">Ver Catálogo Zyntra</a>
-              </Button>
-            </SheetClose>
+            <SheetClose asChild><Button asChild className="mt-8 bg-primary"><a href="/products">Ver Catálogo</a></Button></SheetClose>
           </div>
         )}
       </SheetContent>

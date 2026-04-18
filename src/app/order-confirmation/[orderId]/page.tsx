@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase";
 import type { Order, Product } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Package, Truck, Zap, AlertCircle } from "lucide-react";
+import { MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Package, Truck, Zap } from "lucide-react";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ export default function OrderConfirmationPage() {
         
         setOrder(orderData);
 
-        // FALLBACK INTELIGENTE: Buscar links se não estiverem no pedido
+        // BUSCA INTELIGENTE DE LINKS PARA PRODUTOS DIGITAIS
         const links: Record<string, string> = {};
         for (const item of orderData.items) {
           const isDigitalSearch = item.isDigital || 
@@ -53,11 +53,10 @@ export default function OrderConfirmationPage() {
                                   !!item.digitalLink;
           
           if (isDigitalSearch) {
-            // Se já tem link no item, usa ele
             if (item.digitalLink && item.digitalLink !== "") {
               links[item.id] = item.digitalLink;
             } else {
-              // Senão busca no catálogo original do produto
+              // Fallback: Busca no catálogo original do produto
               try {
                 const prodRef = doc(db, "products", item.id);
                 const prodSnap = await getDoc(prodRef);
@@ -68,7 +67,7 @@ export default function OrderConfirmationPage() {
                   }
                 }
               } catch (e) {
-                console.error("Erro ao buscar link de fallback:", e);
+                console.error("Erro no fallback do link:", e);
               }
             }
           }
@@ -76,53 +75,17 @@ export default function OrderConfirmationPage() {
         setResolvedLinks(links);
       }
       setLoading(false);
-    }, (error) => {
-      console.error("Error listening to order:", error);
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, [orderId]);
 
-  if (loading) {
-    return (
-      <div className="container py-20 flex flex-col items-center justify-center gap-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-muted-foreground animate-pulse">Sincronizando status na oficina...</p>
-      </div>
-    );
-  }
-
-  if (!order) {
-    return (
-      <div className="container py-20 text-center space-y-4">
-        <h2 className="text-4xl font-headline text-primary">Pedido não localizado</h2>
-        <p className="text-muted-foreground">Não encontramos o pedido informado no sistema Zyntra.</p>
-        <Button asChild><Link href="/products">Voltar para a Loja</Link></Button>
-      </div>
-    );
-  }
+  if (loading) return <div className="container py-20 flex justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+  if (!order) return <div className="container py-20 text-center"><h2 className="text-4xl font-headline text-primary">Pedido não localizado</h2><Button asChild className="mt-4"><Link href="/products">Voltar para a Loja</Link></Button></div>;
 
   const isPaid = order.status !== 'pending' && order.status !== 'cancelled';
-  
-  const digitalItems = order.items.filter(item => 
-    item.isDigital || 
-    !!item.digitalLink || 
-    !!resolvedLinks[item.id] ||
-    item.title.toLowerCase().includes('pack') || 
-    item.title.toLowerCase().includes('arquivo')
-  );
-
-  const hasPhysicalItems = order.items.some(item => 
-    !item.isDigital && 
-    !item.title.toLowerCase().includes('pack') && 
-    !item.title.toLowerCase().includes('arquivo') &&
-    !resolvedLinks[item.id]
-  );
-
-  const adminPhone = "5514991023986";
-  const message = `Olá Zyntra 3D! Gostaria de falar sobre o meu pedido.\n\n*Nº do Pedido:* ${order.orderNumber}\n*Status:* ${order.status}`;
-  const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
+  const digitalItems = order.items.filter(item => item.isDigital || !!resolvedLinks[item.id] || item.title.toLowerCase().includes('pack'));
+  const hasPhysicalItems = order.items.some(item => !item.isDigital && !resolvedLinks[item.id]);
 
   return (
     <div className="container mx-auto max-w-4xl py-12 md:py-20 px-4">
@@ -150,7 +113,6 @@ export default function OrderConfirmationPage() {
                      const currentIdx = statusOrder.indexOf(order.status);
                      const stepIdx = statusOrder.indexOf(step.id);
                      const isPast = currentIdx >= stepIdx;
-                     
                      const StepIcon = step.icon;
                      return (
                        <div key={step.id} className="flex flex-col items-center gap-2 relative z-10 w-1/5">
@@ -166,11 +128,9 @@ export default function OrderConfirmationPage() {
             )}
 
             {isPaid && digitalItems.length > 0 && (
-              <div className="p-6 bg-green-500/10 border-2 border-green-500/40 rounded-2xl space-y-6 animate-in zoom-in-95 duration-500">
+              <div className="p-6 bg-green-500/10 border-2 border-green-500/40 rounded-2xl space-y-6">
                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-green-500 flex items-center gap-2 text-sm uppercase tracking-widest">
-                      <Download className="h-5 w-5" /> Arquivos Liberados!
-                    </h3>
+                    <h3 className="font-bold text-green-500 flex items-center gap-2 text-sm uppercase tracking-widest"><Download className="h-5 w-5" /> Arquivos Liberados!</h3>
                     <Badge className="bg-green-600">DOWNLOAD IMEDIATO</Badge>
                  </div>
                  <div className="grid gap-4">
@@ -186,49 +146,19 @@ export default function OrderConfirmationPage() {
                       );
                     })}
                  </div>
-                 <p className="text-[11px] text-muted-foreground text-center italic leading-relaxed">
-                   Os links levam ao nosso armazenamento seguro no Google Drive. Se o botão não abrir, verifique se o navegador bloqueou o pop-up.
-                 </p>
               </div>
-            )}
-
-            {hasPhysicalItems && (
-              <>
-                {order.status === 'shipped' && order.trackingLink ? (
-                  <Alert className="bg-indigo-500/10 border-indigo-500/30">
-                    <Truck className="h-4 w-4 text-indigo-500" />
-                    <AlertTitle className="text-indigo-500 font-bold">Pedido Enviado!</AlertTitle>
-                    <AlertDescription>
-                      Seu projeto já saiu da oficina. <a href={order.trackingLink} target="_blank" className="underline font-bold">Acompanhe a rota de entrega clicando aqui.</a>
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Alert className="bg-primary/10 border-primary/20">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <AlertTitle className="text-primary font-bold">Aguardando Envio</AlertTitle>
-                    <AlertDescription>
-                      Sua peça está na fase de {order.status === 'ready' ? 'embalagem final' : 'produção técnica'}. Você receberá o link da rota assim que o entregador sair.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <div className="space-y-4">
-                  <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase">
-                    <MapPin className="h-4 w-4" /> Logística de Entrega
-                  </h3>
+                  <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase"><MapPin className="h-4 w-4" /> Logística de Entrega</h3>
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5 h-24 flex flex-col justify-center">
                     <p className="font-medium">{order.delivery ? "Zyntra Logística - Botucatu" : "Retirada na Unidade Técnica"}</p>
                     {order.delivery && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order.location}</p>}
-                    {!order.delivery && digitalItems.length > 0 && <p className="text-xs text-muted-foreground mt-1">Entrega Digital Via Nuvem</p>}
                   </div>
                </div>
                <div className="space-y-4">
-                  <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase">
-                    <Zap className="h-4 w-4" /> Status Financeiro
-                  </h3>
+                  <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase"><Zap className="h-4 w-4" /> Status Financeiro</h3>
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5 h-24 flex flex-col justify-center">
                      <Badge className={`w-fit py-1 px-4 uppercase ${isPaid ? 'bg-green-500/20 text-green-500' : 'bg-destructive/20 text-destructive'}`}>
                         {order.status === 'pending' ? 'Aguardando Pagamento' : order.status === 'cancelled' ? 'Cancelado' : "Pago com Sucesso"}
@@ -244,19 +174,10 @@ export default function OrderConfirmationPage() {
                   <TableBody>
                       {order.items.map((item, index) => (
                           <TableRow key={index} className="border-white/5">
-                              <TableCell className="font-medium">
-                                {item.title} <span className="text-accent">x{item.quantity}</span>
-                                {(item.isDigital || item.title.toLowerCase().includes('pack')) && <Badge variant="outline" className="ml-2 text-[8px] h-3 uppercase border-accent text-accent">Digital</Badge>}
-                              </TableCell>
+                              <TableCell className="font-medium">{item.title} <span className="text-accent">x{item.quantity}</span></TableCell>
                               <TableCell className="text-right">R$ {(item.unit_price * item.quantity).toFixed(2)}</TableCell>
                           </TableRow>
                       ))}
-                      {order.delivery && (
-                           <TableRow className="border-white/5">
-                              <TableCell className="text-muted-foreground italic">Taxa de Logística Inteligente</TableCell>
-                              <TableCell className="text-right">R$ {order.deliveryFee.toFixed(2)}</TableCell>
-                          </TableRow>
-                      )}
                       <TableRow className="bg-primary/5 hover:bg-primary/5 border-none">
                         <TableCell className="font-bold text-lg text-primary">TOTAL</TableCell>
                         <TableCell className="text-right font-bold text-lg text-primary">R$ {order.total.toFixed(2)}</TableCell>
@@ -266,25 +187,15 @@ export default function OrderConfirmationPage() {
                </div>
             </div>
 
-            <div className="text-center space-y-6 pt-4 border-t border-white/5">
-                <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                  Alguma dúvida sobre o material ou os arquivos? Fale direto com nossos makers.
-                </p>
-                <Button asChild size="lg" className="bg-green-600 hover:bg-green-700 text-white w-full h-16 text-xl shadow-xl">
-                    <Link href={whatsappUrl} target="_blank">
-                        <MessageCircle className="mr-2 h-6 w-6" />
-                        Suporte Técnico WhatsApp
-                    </Link>
-                </Button>
-            </div>
+            <Button asChild size="lg" className="bg-green-600 hover:bg-green-700 text-white w-full h-16 text-xl">
+                <Link href={`https://wa.me/5514991023986?text=Oi! Quero falar sobre meu pedido %23${order.orderNumber}`} target="_blank">
+                    <MessageCircle className="mr-2 h-6 w-6" /> Suporte Técnico WhatsApp
+                </Link>
+            </Button>
         </CardContent>
-        <CardFooter className="p-8 border-t border-white/5 flex flex-col sm:flex-row gap-4 justify-between">
-            <Button asChild variant="ghost" className="text-muted-foreground">
-                <Link href="/products">Continuar na Oficina</Link>
-            </Button>
-            <Button asChild variant="outline" className="border-primary/20">
-                <Link href="/my-orders">Ir para Meus Pedidos</Link>
-            </Button>
+        <CardFooter className="p-8 border-t border-white/5 flex gap-4 justify-between">
+            <Button asChild variant="ghost"><Link href="/products">Continuar na Oficina</Link></Button>
+            <Button asChild variant="outline" className="border-primary/20"><Link href="/my-orders">Ir para Meus Pedidos</Link></Button>
         </CardFooter>
       </Card>
     </div>
