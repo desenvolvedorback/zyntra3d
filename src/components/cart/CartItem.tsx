@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -33,6 +34,7 @@ export function CartItem({ item }: CartItemProps) {
           fill 
           className="object-cover"
           sizes="80px"
+          unoptimized
         />
       </div>
       <div className="flex-grow">

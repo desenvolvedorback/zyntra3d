@@ -1,6 +1,6 @@
+
 'use server';
 
-import type { UserProfile } from "@/lib/types";
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 interface CheckoutItem {
@@ -12,7 +12,6 @@ interface CheckoutItem {
 
 interface MercadoPagoCheckoutArgs {
   items: CheckoutItem[];
-  // Sanitize user profile to be a plain object
   user: {
     uid: string;
     email: string | null;
@@ -24,13 +23,12 @@ interface MercadoPagoCheckoutArgs {
   location?: string;
   orderId: string;
   orderNumber: number;
-  observation?: string;
-  contactPhone?: string;
 }
 
 export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promise<string | null> {
-  const { items, user, deliveryFee = 0, location = '', orderId, orderNumber, observation = '', contactPhone = '' } = args;
+  const { items, user, deliveryFee = 0, location = '', orderId } = args;
 
+  // Token de Produção Zyntra 3D
   const accessToken = 'APP_USR-4873657725416680-041519-a1a2d79c61cee7f1cfa105b8bd7e2db4-99290797';
   
   try {
@@ -39,31 +37,31 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zyntra3d.onrender.com';
 
-    const nameParts = user.displayName?.split(' ') || ['Maker', 'Zyntra'];
+    const nameParts = (user.displayName || "Maker Zyntra").split(' ');
     const firstName = nameParts[0];
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Zyntra';
 
     const cleanPhone = (phone: string) => {
-      const p = phone.replace(/[^0-9]/g, "");
+      const p = (phone || "").replace(/[^0-9]/g, "");
       return p.length >= 10 ? p : "14999999999";
     };
     
-    const userPhone = cleanPhone(user.phone || contactPhone || "");
+    const userPhone = cleanPhone(user.phone || "");
     const areaCode = userPhone.substring(0, 2) || "14";
     const phoneNumber = userPhone.substring(2) || "999999999";
 
     const cleanCpf = (cpf: string) => {
-      const c = cpf.replace(/[^0-9]/g, "");
+      const c = (cpf || "").replace(/[^0-9]/g, "");
       return c.length === 11 ? c : "00000000000";
     };
 
-    const isDelivery = (deliveryFee || 0) > 0 && !!location;
+    const isDelivery = (deliveryFee || 0) > 0 && !!location && location !== 'Retirada Unidade Botucatu';
     
     const preferenceItems = items.map((item) => ({
-      id: item.id,
-      title: item.title,
-      quantity: item.quantity,
-      unit_price: Number(item.unit_price.toFixed(2)),
+      id: String(item.id),
+      title: String(item.title),
+      quantity: Number(item.quantity),
+      unit_price: Number(Number(item.unit_price).toFixed(2)),
       currency_id: 'BRL',
     }));
 
@@ -72,7 +70,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         id: 'delivery_fee',
         title: 'Zyntra Logística - Entrega Botucatu',
         quantity: 1,
-        unit_price: Number(deliveryFee.toFixed(2)),
+        unit_price: Number(Number(deliveryFee).toFixed(2)),
         currency_id: 'BRL',
       });
     }
@@ -89,7 +87,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         },
         identification: {
           type: 'CPF',
-          number: cleanCpf(user.cpf || ""),
+          number: cleanCpf(user.cpf),
         },
       },
       back_urls: {
@@ -98,7 +96,6 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         pending: `${siteUrl}/order-confirmation/${orderId}`,
       },
       auto_return: 'approved',
-      notification_url: `${siteUrl}/api/mp-webhook`,
       metadata: {
         order_id: orderId,
         user_id: user.uid,

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,7 +11,6 @@ import { MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Pa
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { useParams } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -28,7 +28,7 @@ export default function OrderConfirmationPage() {
   
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const [resolvedDigitalLinks, setResolvedDigitalLinks] = useState<Record<string, string>>({});
+  const [resolvedLinks, setResolvedLinks] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!orderId) return;
@@ -45,7 +45,7 @@ export default function OrderConfirmationPage() {
         
         setOrder(orderData);
 
-        // Check for digital links even if they were not in the order snapshot
+        // Fallback para buscar links digitais se não estiverem no pedido
         const links: Record<string, string> = {};
         for (const item of orderData.items) {
           const isDigitalSearch = item.isDigital || 
@@ -67,7 +67,7 @@ export default function OrderConfirmationPage() {
             }
           }
         }
-        setResolvedDigitalLinks(links);
+        setResolvedLinks(links);
       }
       setLoading(false);
     }, (error) => {
@@ -102,7 +102,7 @@ export default function OrderConfirmationPage() {
   const digitalItems = order.items.filter(item => 
     item.isDigital || 
     !!item.digitalLink || 
-    !!resolvedDigitalLinks[item.id] ||
+    !!resolvedLinks[item.id] ||
     item.title.toLowerCase().includes('pack') || 
     item.title.toLowerCase().includes('arquivo')
   );
@@ -110,7 +110,8 @@ export default function OrderConfirmationPage() {
   const hasPhysicalItems = order.items.some(item => 
     !item.isDigital && 
     !item.title.toLowerCase().includes('pack') && 
-    !item.title.toLowerCase().includes('arquivo')
+    !item.title.toLowerCase().includes('arquivo') &&
+    !resolvedLinks[item.id]
   );
 
   const adminPhone = "5514991023986";
@@ -121,7 +122,7 @@ export default function OrderConfirmationPage() {
     <div className="container mx-auto max-w-4xl py-12 md:py-20 px-4">
       <Card className="shadow-2xl border border-white/5 bg-card/50 backdrop-blur-xl overflow-hidden">
         <CardHeader className="items-center text-center p-8 border-b border-white/5 bg-primary/5">
-            <div className="p-4 rounded-full bg-primary/10 mb-4 animate-bounce">
+            <div className="p-4 rounded-full bg-primary/10 mb-4">
               {hasPhysicalItems ? <Printer className="h-12 w-12 text-primary" /> : <Zap className="h-12 w-12 text-accent" />}
             </div>
             <CardTitle className="text-4xl font-headline text-primary">Status da Sua Ideia</CardTitle>
@@ -168,7 +169,7 @@ export default function OrderConfirmationPage() {
                  </div>
                  <div className="grid gap-4">
                     {digitalItems.map((item, idx) => {
-                      const finalLink = item.digitalLink || resolvedDigitalLinks[item.id];
+                      const finalLink = item.digitalLink || resolvedLinks[item.id];
                       return (
                         <Button key={idx} asChild className="w-full bg-green-600 hover:bg-green-700 h-14 shadow-lg text-lg font-bold group">
                           <a href={finalLink || "#"} target="_blank" rel="noopener noreferrer">
@@ -179,11 +180,6 @@ export default function OrderConfirmationPage() {
                       );
                     })}
                  </div>
-                 {!Object.values(resolvedDigitalLinks).length && !order.items.some(i => i.digitalLink) && (
-                   <p className="text-xs text-destructive text-center font-bold">
-                     Link não encontrado. Por favor, acione o suporte técnico abaixo.
-                   </p>
-                 )}
                  <p className="text-[11px] text-muted-foreground text-center italic leading-relaxed">
                    Os links levam ao nosso armazenamento seguro. Você também pode acessar esses arquivos em "Meus Pedidos".
                  </p>
@@ -220,7 +216,7 @@ export default function OrderConfirmationPage() {
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5 h-24 flex flex-col justify-center">
                     <p className="font-medium">{order.delivery ? "Zyntra Logística - Botucatu" : "Retirada na Unidade Técnica"}</p>
                     {order.delivery && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order.location}</p>}
-                    {!order.delivery && digitalItems.length > 0 && <p className="text-xs text-muted-foreground mt-1">Acesso Digital Instantâneo</p>}
+                    {!order.delivery && digitalItems.length > 0 && <p className="text-xs text-muted-foreground mt-1">Entrega Digital Via Nuvem</p>}
                   </div>
                </div>
                <div className="space-y-4">

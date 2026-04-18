@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useCallback, useEffect, useState, useContext, useMemo, type ReactNode } from "react";
@@ -31,13 +32,12 @@ export const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export const useCart = () => {
   const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error("useCart must be used within a CartProvider");
-  }
+  // Durante o SSR do Next.js 15, o contexto pode ser undefined. 
+  // Retornamos undefined em vez de estourar erro para permitir hidratação segura.
   return context;
 };
 
-const LOCAL_STORAGE_KEY = "zyntra_3d_cart_v4";
+const LOCAL_STORAGE_KEY = "zyntra_3d_cart_v5";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);

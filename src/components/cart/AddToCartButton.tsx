@@ -12,7 +12,7 @@ interface AddToCartButtonProps {
 }
 
 export function AddToCartButton({ product }: AddToCartButtonProps) {
-  const { addToCart } = useCart();
+  const cartContext = useCart();
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -21,9 +21,10 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
   }, []);
 
   const handleAddToCart = () => {
+    if (!cartContext) return;
     setLoading(true);
     try {
-      addToCart({
+      cartContext.addToCart({
         id: product.id,
         name: product.name,
         price: product.price,
@@ -38,7 +39,7 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
     }
   };
 
-  if (!isMounted) {
+  if (!isMounted || !cartContext) {
     return (
       <Button disabled className="w-full">
         Carregando...
