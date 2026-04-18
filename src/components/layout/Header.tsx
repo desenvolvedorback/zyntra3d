@@ -8,13 +8,14 @@ import { CartSheet } from "@/components/cart/CartSheet";
 import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Printer, Package, Info, Home } from "lucide-react";
+import { Menu, X, Printer, Package, Info, Home, Newspaper } from "lucide-react";
 
 export function Header() {
   const { isAdmin } = useAuth();
   const navItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/products", label: "Modelos & Serviços", icon: Package },
+    { href: "/news", label: "Novidades", icon: Newspaper },
     { href: "/about", label: "Tecnologia", icon: Info },
   ];
 
