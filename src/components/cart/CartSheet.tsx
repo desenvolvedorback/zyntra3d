@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -113,6 +112,7 @@ export function CartSheet() {
         const orderNumber = await getNextOrderNumber();
         const orderRef = doc(collection(db, "orders"));
 
+        // Garantir gravação de metadados digitais no pedido
         const orderPayload = {
           orderNumber,
           status: 'pending',
@@ -142,7 +142,7 @@ export function CartSheet() {
 
         await setDoc(orderRef, orderPayload);
 
-        // PASS APENAS DADOS SIMPLES PARA EVITAR ERRO DE SERIALIZAÇÃO 500
+        // PASSAR DADOS SIMPLES - Next.js 15 Server Actions não aceitam objetos complexos/vazios
         const checkoutUrl = await mercadoPagoCheckout({
           items: orderPayload.items.map(i => ({
             id: String(i.id),
@@ -152,10 +152,10 @@ export function CartSheet() {
           })),
           user: {
             uid: String(userProfile.uid),
-            email: String(userProfile.email),
-            displayName: String(userProfile.displayName),
-            cpf: String(userProfile.cpf || ""),
-            phone: String(userProfile.phone || contactPhone || "")
+            email: String(userProfile.email || "cliente@zyntra.com"),
+            displayName: String(userProfile.displayName || "Zyntra Maker"),
+            cpf: String(userProfile.cpf || "00000000000"),
+            phone: String(userProfile.phone || contactPhone || "14991023986")
           },
           deliveryFee: Number(orderPayload.deliveryFee),
           location: String(orderPayload.location),
@@ -166,10 +166,11 @@ export function CartSheet() {
         if (checkoutUrl) {
           window.location.href = checkoutUrl;
         } else {
-          throw new Error("O servidor do Mercado Pago não respondeu. Tente novamente em instantes.");
+          throw new Error("Não foi possível gerar o link do Mercado Pago. Tente novamente.");
         }
       } catch (error: any) {
-        toast({ variant: "destructive", title: "Falha no Pagamento", description: error.message || "Erro ao gerar link. Tente novamente." });
+        console.error("[Zyntra Checkout]:", error);
+        toast({ variant: "destructive", title: "Falha no Pagamento", description: error.message || "Erro ao conectar com a oficina. Verifique sua conexão." });
       }
     });
   }
@@ -190,8 +191,8 @@ export function CartSheet() {
       </SheetTrigger>
       <SheetContent className="flex flex-col w-full sm:max-w-lg bg-card border-l-primary/20">
         <SheetHeader>
-          <SheetTitle className="text-primary font-headline text-2xl">Oficina Zyntra 3D</SheetTitle>
-          <SheetDescription>Revise seus projetos antes de iniciar a impressão.</SheetDescription>
+          <SheetTitle className="text-primary font-headline text-2xl">Carrinho Zyntra 3D</SheetTitle>
+          <SheetDescription>Revise seus pedidos antes de iniciar a impressão.</SheetDescription>
         </SheetHeader>
         <Separator className="my-4 opacity-10" />
 
@@ -292,7 +293,7 @@ export function CartSheet() {
               <div className="w-full space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Subtotal de Projetos</span>
+                    <span>Subtotal de Pedidos</span>
                     <span>R$ {totalPrice.toFixed(2)}</span>
                   </div>
                   {hasPhysicalItems && delivery && (
@@ -324,7 +325,7 @@ export function CartSheet() {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center text-center opacity-40">
             <Box className="h-24 w-24 text-muted-foreground mb-4" />
-            <p className="text-xl font-semibold">Sua oficina está vazia</p>
+            <p className="text-xl font-semibold">Seu carrinho está vazio</p>
             <p className="text-sm">Explore o catálogo e adicione itens para começar.</p>
             <SheetClose asChild>
               <Button asChild className="mt-8 bg-primary">

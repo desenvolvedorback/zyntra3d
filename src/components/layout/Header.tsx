@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -13,8 +12,8 @@ import { Menu, X, Package, Info, Home, Newspaper } from "lucide-react";
 export function Header() {
   const { isAdmin } = useAuth();
   const navItems = [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/products", label: "Modelos & Serviços", icon: Package },
+    { href: "/", label: "Início", icon: Home },
+    { href: "/products", label: "Catálogo 3D", icon: Package },
     { href: "/news", label: "Novidades", icon: Newspaper },
     { href: "/about", label: "Tecnologia", icon: Info },
   ];

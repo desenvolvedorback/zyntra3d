@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,25 +67,25 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="p-8 grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Informações de Registro</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Informações Maker</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
-                    <span className="text-muted-foreground text-sm">Função</span>
-                    <span className="font-semibold capitalize text-accent">{userProfile.role}</span>
+                    <span className="text-muted-foreground text-sm">Nível de Acesso</span>
+                    <span className="font-semibold capitalize text-accent">{userProfile.role === 'admin' ? 'Administrador Zyntra' : 'Zyntra Maker'}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
                     <span className="text-muted-foreground text-sm">CPF</span>
                     <span className="font-semibold">{userProfile.cpf || "Não informado"}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
-                    <span className="text-muted-foreground text-sm">Telefone</span>
+                    <span className="text-muted-foreground text-sm">Contato</span>
                     <span className="font-semibold">{userProfile.phone || "Não informado"}</span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Atalhos da Oficina</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Oficina do Cliente</h3>
               <div className="grid grid-cols-1 gap-3">
                 <Button asChild variant="secondary" className="h-14 justify-start gap-4 text-lg">
                   <Link href="/my-orders">
@@ -100,7 +99,7 @@ export default function ProfilePage() {
                 </Button>
                 <Button variant="ghost" onClick={handleSignOut} className="h-14 justify-start gap-4 text-lg text-destructive hover:bg-destructive/10">
                   <LogOut className="h-6 w-6" />
-                  Sair da Conta
+                  Sair da Oficina
                 </Button>
               </div>
             </div>

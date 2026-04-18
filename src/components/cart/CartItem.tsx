@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -13,7 +12,10 @@ interface CartItemProps {
 }
 
 export function CartItem({ item }: CartItemProps) {
-  const { updateQuantity, removeFromCart, getDiscountedPrice } = useCart();
+  const cartContext = useCart();
+  if (!cartContext) return null;
+
+  const { updateQuantity, removeFromCart, getDiscountedPrice } = cartContext;
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuantity = parseInt(e.target.value, 10);

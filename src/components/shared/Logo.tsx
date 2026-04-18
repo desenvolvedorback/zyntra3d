@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -17,8 +16,8 @@ export function Logo({ className }: { className?: string }) {
       <Image 
         src="https://files.catbox.moe/4my793.png"
         alt="Zyntra 3D Logo"
-        width={80}
-        height={40}
+        width={100}
+        height={50}
         className="object-contain"
         priority
         unoptimized

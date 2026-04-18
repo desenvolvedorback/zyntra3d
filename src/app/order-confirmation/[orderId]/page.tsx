@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -45,7 +44,7 @@ export default function OrderConfirmationPage() {
         
         setOrder(orderData);
 
-        // Fallback robusto para buscar links digitais se não estiverem no pedido
+        // FALLBACK INTELIGENTE: Buscar links se não estiverem no pedido
         const links: Record<string, string> = {};
         for (const item of orderData.items) {
           const isDigitalSearch = item.isDigital || 
@@ -55,10 +54,10 @@ export default function OrderConfirmationPage() {
           
           if (isDigitalSearch) {
             // Se já tem link no item, usa ele
-            if (item.digitalLink) {
+            if (item.digitalLink && item.digitalLink !== "") {
               links[item.id] = item.digitalLink;
             } else {
-              // Senão busca no catálogo original
+              // Senão busca no catálogo original do produto
               try {
                 const prodRef = doc(db, "products", item.id);
                 const prodSnap = await getDoc(prodRef);
@@ -132,7 +131,7 @@ export default function OrderConfirmationPage() {
             <div className="p-4 rounded-full bg-primary/10 mb-4">
               {hasPhysicalItems ? <Printer className="h-12 w-12 text-primary" /> : <Zap className="h-12 w-12 text-accent" />}
             </div>
-            <CardTitle className="text-4xl font-headline text-primary">Status da Sua Ideia</CardTitle>
+            <CardTitle className="text-4xl font-headline text-primary">Status do Pedido</CardTitle>
             <CardDescription className="text-lg">
                 Pedido #{order.orderNumber} • {hasPhysicalItems ? "Acompanhe o progresso camada a camada." : "Seu acesso digital está pronto."}
             </CardDescription>
@@ -142,7 +141,7 @@ export default function OrderConfirmationPage() {
             {hasPhysicalItems && (
               <div className="space-y-6">
                 <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase tracking-widest text-center justify-center">
-                  Linha de Produção
+                  Linha de Produção Física
                 </h3>
                 <div className="flex justify-between items-start relative max-w-2xl mx-auto">
                    <div className="absolute top-5 left-0 right-0 h-0.5 bg-white/5 -z-0" />

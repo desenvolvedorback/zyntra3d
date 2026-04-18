@@ -1,34 +1,33 @@
-
 'use server';
 
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 interface CheckoutItem {
-    id: string;
-    title: string;
-    quantity: number;
-    unit_price: number;
+  id: string;
+  title: string;
+  quantity: number;
+  unit_price: number;
 }
 
 interface MercadoPagoCheckoutArgs {
   items: CheckoutItem[];
   user: {
     uid: string;
-    email: string | null;
-    displayName: string | null;
+    email: string;
+    displayName: string;
     cpf: string;
     phone: string;
   };
-  deliveryFee?: number;
-  location?: string;
+  deliveryFee: number;
+  location: string;
   orderId: string;
   orderNumber: number;
 }
 
 export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promise<string | null> {
-  const { items, user, deliveryFee = 0, location = '', orderId } = args;
+  const { items, user, deliveryFee, location, orderId } = args;
 
-  // Token de Produção Zyntra 3D
+  // Token de Produção Oficial Zyntra 3D
   const accessToken = 'APP_USR-4873657725416680-041519-a1a2d79c61cee7f1cfa105b8bd7e2db4-99290797';
   
   try {
@@ -41,14 +40,15 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     const firstName = nameParts[0] || "Maker";
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Zyntra';
 
+    // Limpeza rigorosa de dados para evitar erro 400 no Mercado Pago
     const cleanPhone = (phone: string) => {
       const p = (phone || "").replace(/[^0-9]/g, "");
-      return p.length >= 10 ? p : "14999102398";
+      return p.length >= 10 ? p : "14991023986";
     };
     
-    const userPhone = cleanPhone(user.phone || "");
-    const areaCode = userPhone.substring(0, 2) || "14";
-    const phoneNumber = userPhone.substring(2) || "991023986";
+    const userPhone = cleanPhone(user.phone);
+    const areaCode = userPhone.substring(0, 2);
+    const phoneNumber = userPhone.substring(2);
 
     const cleanCpf = (cpf: string) => {
       const c = (cpf || "").replace(/[^0-9]/g, "");
@@ -59,7 +59,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     
     const preferenceItems = items.map((item) => ({
       id: String(item.id),
-      title: String(item.title),
+      title: String(item.title).substring(0, 250),
       quantity: Number(item.quantity),
       unit_price: Number(Number(item.unit_price).toFixed(2)),
       currency_id: 'BRL',
@@ -106,13 +106,14 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     const result = await preference.create({ body: preferenceBody });
     
     if (!result.init_point) {
-      throw new Error("Mercado Pago não retornou init_point");
+      console.error("[Zyntra MP] Init point missing in response", result);
+      return null;
     }
 
     return result.init_point;
 
   } catch (error: any) {
-    console.error("[Zyntra MP Error]:", error);
+    console.error("[Zyntra MP Error Details]:", error?.message || error);
     return null;
   }
 }
