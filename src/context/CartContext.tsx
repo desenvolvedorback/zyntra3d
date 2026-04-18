@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useCallback, useEffect, useState, useContext, type ReactNode } from "react";
+import React, { createContext, useCallback, useEffect, useState, useContext, useMemo, type ReactNode } from "react";
 import type { Product, CartItem, Promotion } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
@@ -24,6 +24,8 @@ interface CartContextType {
   deliveryFee: number;
   finalDeliveryFee: number;
   deliveryPromotion: Promotion | null;
+  productPromotions: Promotion[];
+  getDiscountedPrice: (item: CartItem) => number;
 }
 
 export const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -36,7 +38,7 @@ export const useCart = () => {
   return context;
 };
 
-const LOCAL_STORAGE_KEY = "zyntra_3d_cart_v2";
+const LOCAL_STORAGE_KEY = "zyntra_3d_cart_v3";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -45,8 +47,52 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [delivery, setDelivery] = useState(false);
   const [location, setLocation] = useState("");
   const { toast } = useToast();
-  const deliveryFee = 10;
   const [deliveryPromotion, setDeliveryPromotion] = useState<Promotion | null>(null);
+  const [productPromotions, setProductPromotions] = useState<Promotion[]>([]);
+  const baseDeliveryFee = 10;
+
+  // Monitorar Promoções de Entrega
+  useEffect(() => {
+    const q = query(
+      collection(db, "promotions"), 
+      where("isActive", "==", true), 
+      where("type", "==", "delivery")
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const promos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Promotion));
+        setDeliveryPromotion(promos[0]);
+      } else {
+        setDeliveryPromotion(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Monitorar Promoções de Produtos
+  useEffect(() => {
+    const q = query(
+      collection(db, "promotions"), 
+      where("isActive", "==", true), 
+      where("type", "==", "product")
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const promos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Promotion));
+      setProductPromotions(promos);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const getDiscountedPrice = useCallback((item: CartItem) => {
+    const promo = productPromotions.find(p => p.productId === item.productId);
+    if (!promo) return item.price; // item.price é o preço base salvo
+
+    if (promo.discountType === 'percentage') {
+      return item.price * (1 - promo.discountValue / 100);
+    } else {
+      return Math.max(0, item.price - promo.discountValue);
+    }
+  }, [productPromotions]);
 
   const getLocalCart = useCallback((): CartItem[] => {
     if (typeof window === 'undefined') return [];
@@ -63,43 +109,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
     } catch (error) {}
-  }, []);
-
-  useEffect(() => {
-    const fetchDeliveryPromo = async () => {
-      const promoQuery = query(
-        collection(db, "promotions"), 
-        where("isActive", "==", true), 
-        where("type", "==", "delivery")
-      );
-      try {
-        const promoSnapshot = await getDocs(promoQuery);
-        if (!promoSnapshot.empty) {
-          const promos = promoSnapshot.docs
-            .map(doc => {
-              const data = doc.data();
-              return { 
-                id: doc.id, 
-                name: data.name,
-                type: data.type,
-                discountType: data.discountType,
-                discountValue: data.discountValue,
-                isActive: data.isActive,
-                createdAt: data.createdAt?.toDate() || new Date()
-              } as Promotion;
-            })
-            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-          
-          setDeliveryPromotion(promos[0]);
-        } else {
-          setDeliveryPromotion(null);
-        }
-      } catch (error) {
-        setDeliveryPromotion(null);
-      }
-    };
-
-    fetchDeliveryPromo();
   }, []);
 
   const mergeAndClearLocalCart = useCallback(async (userId: string) => {
@@ -140,19 +149,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [user, authLoading, getLocalCart, mergeAndClearLocalCart]);
 
-
   const addToCart = async (product: any, quantity = 1) => {
     if (product.stock === 0) {
       toast({ variant: "destructive", title: "Fora de Estoque", description: `${product.name} não está disponível.` });
       return;
     }
     
-    const finalPrice = product.promotionalPrice ?? product.price;
+    // Salvamos o preço BASE no carrinho, as promoções são calculadas dinamicamente
+    const basePrice = product.price;
 
     const newItem: CartItem = { 
       productId: product.id,
       name: product.name,
-      price: finalPrice,
+      price: basePrice, 
       imageUrl: product.imageUrl,
       quantity,
       category: product.category,
@@ -223,11 +232,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  
+  // Total Price sempre considera as promoções de produto ativas no momento
+  const totalPrice = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + (getDiscountedPrice(item) * item.quantity), 0);
+  }, [cartItems, getDiscountedPrice]);
 
-  const finalDeliveryFee = deliveryPromotion ? 
-    (deliveryPromotion.discountType === 'fixed' ? Math.max(0, deliveryFee - deliveryPromotion.discountValue) : deliveryFee * (1 - deliveryPromotion.discountValue/100)) : 
-    deliveryFee;
+  const finalDeliveryFee = useMemo(() => {
+    if (!deliveryPromotion) return baseDeliveryFee;
+    if (deliveryPromotion.discountType === 'fixed') {
+      return Math.max(0, baseDeliveryFee - deliveryPromotion.discountValue);
+    }
+    return baseDeliveryFee * (1 - deliveryPromotion.discountValue / 100);
+  }, [baseDeliveryFee, deliveryPromotion]);
 
   const value = {
     cartItems,
@@ -242,9 +259,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setDelivery,
     location,
     setLocation,
-    deliveryFee,
+    deliveryFee: baseDeliveryFee,
     finalDeliveryFee,
     deliveryPromotion,
+    productPromotions,
+    getDiscountedPrice
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
