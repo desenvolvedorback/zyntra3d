@@ -1,14 +1,15 @@
+
 'use client';
 
 import { useState, useEffect } from "react";
 import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import type { Order } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Package, Truck, ExternalLink, Printer, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Loader2, Package, Truck, ExternalLink, Printer, CheckCircle2, Clock, AlertCircle, Download, FileCode } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
@@ -67,7 +68,7 @@ export default function MyOrdersPage() {
     return (
       <div className="container py-20 text-center space-y-4">
         <h2 className="text-2xl font-headline text-primary">Acesso Restrito</h2>
-        <p>Faça login para ver seu histórico de projetos 3D.</p>
+        <p>Faça login para ver seu histórico de pedidos 3D.</p>
         <Button asChild><Link href="/login">Ir para Login</Link></Button>
       </div>
     );
@@ -77,8 +78,8 @@ export default function MyOrdersPage() {
     <div className="container mx-auto py-12 px-6 max-w-5xl">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
         <div>
-          <h1 className="text-4xl font-headline text-primary mb-2">Meus Projetos</h1>
-          <p className="text-muted-foreground">Acompanhe a materialização das suas ideias.</p>
+          <h1 className="text-4xl font-headline text-primary mb-2">Meus Pedidos</h1>
+          <p className="text-muted-foreground">Acompanhe a materialização das suas ideias na Zyntra 3D.</p>
         </div>
         <Button asChild variant="outline" className="border-primary/20">
           <Link href="/products">Novo Pedido</Link>
@@ -89,6 +90,8 @@ export default function MyOrdersPage() {
         {orders.length > 0 ? (
           orders.map((order) => {
             const status = STATUS_MAP[order.status] || STATUS_MAP.pending;
+            const isPaid = order.status !== 'pending' && order.status !== 'cancelled';
+            
             return (
               <Card key={order.id} className="bg-secondary/20 border-white/5 overflow-hidden transition-all hover:border-primary/30">
                 <CardHeader className="flex flex-row items-center justify-between bg-black/40 border-b border-white/5 p-6">
@@ -106,31 +109,44 @@ export default function MyOrdersPage() {
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">
                     <div className="lg:col-span-2 flex flex-col gap-4">
-                      {order.items.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-4 bg-white/5 p-3 rounded-lg border border-white/5">
-                          <div className="h-12 w-12 rounded bg-primary/20 flex items-center justify-center">
-                            <Printer className="h-6 w-6 text-primary" />
+                      {order.items.map((item, idx) => {
+                        const isDigital = !!item.digitalLink;
+                        return (
+                          <div key={idx} className="flex items-center gap-4 bg-white/5 p-3 rounded-lg border border-white/5">
+                            <div className="h-12 w-12 rounded bg-primary/20 flex items-center justify-center shrink-0">
+                              {isDigital ? <FileCode className="h-6 w-6 text-accent" /> : <Printer className="h-6 w-6 text-primary" />}
+                            </div>
+                            <div className="flex-grow min-w-0">
+                              <p className="font-bold text-sm truncate">{item.title}</p>
+                              <p className="text-[10px] uppercase font-bold text-muted-foreground">
+                                {isDigital ? "📦 Arquivo Digital" : "🛠️ Impressão Física"}
+                              </p>
+                            </div>
+                            {isPaid && isDigital && (
+                              <Button asChild size="sm" variant="ghost" className="text-accent hover:bg-accent/10">
+                                <a href={item.digitalLink} target="_blank"><Download className="h-4 w-4" /></a>
+                              </Button>
+                            )}
                           </div>
-                          <div>
-                            <p className="font-bold text-sm">{item.title}</p>
-                            <p className="text-xs text-muted-foreground">Quantidade: {item.quantity}</p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
-                    <div className="space-y-2">
-                       <p className="text-[10px] uppercase font-bold text-muted-foreground">Investimento</p>
+                    <div className="space-y-2 text-center lg:text-left">
+                       <p className="text-[10px] uppercase font-bold text-muted-foreground">Total Investido</p>
                        <p className="text-2xl font-headline text-primary">R$ {order.total.toFixed(2)}</p>
                     </div>
 
                     <div className="flex flex-col gap-3">
-                      <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/80">
-                        <Link href={`/order-confirmation/${order.id}`}>Ver Detalhes</Link>
+                      <Button asChild className="w-full bg-primary hover:bg-primary/80">
+                        <Link href={`/order-confirmation/${order.id}`}>
+                           {isPaid ? "Status de Produção" : "Pagar Agora"}
+                        </Link>
                       </Button>
-                      {order.trackingLink && (
-                        <Button asChild size="sm" variant="outline" className="w-full border-accent text-accent hover:bg-accent/10">
-                          <a href={order.trackingLink} target="_blank" className="flex items-center justify-center">
+                      
+                      {order.status === 'shipped' && order.trackingLink && (
+                        <Button asChild variant="outline" className="w-full border-accent text-accent hover:bg-accent/10">
+                          <a href={order.trackingLink} target="_blank">
                             <Truck className="h-4 w-4 mr-2" /> Rastrear Envio
                           </a>
                         </Button>
@@ -138,18 +154,14 @@ export default function MyOrdersPage() {
                     </div>
                   </div>
 
-                  {order.previewImageUrl && (
-                    <div className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/20 flex items-center gap-4 animate-in fade-in duration-500">
-                      <div className="relative h-16 w-16 rounded-lg overflow-hidden border border-primary/30 flex-shrink-0">
-                        <Image src={order.previewImageUrl} alt="Peça Pronta" fill className="object-cover" />
+                  {order.status === 'paid' && !order.items.some(i => i.digitalLink) && (
+                    <div className="mt-6 p-4 bg-accent/5 rounded-xl border border-accent/20 flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-accent/10">
+                        <AlertCircle className="h-4 w-4 text-accent" />
                       </div>
-                      <div className="flex-grow">
-                        <p className="text-xs font-bold text-primary uppercase">📸 Foto da Produção</p>
-                        <p className="text-xs text-muted-foreground">Sua peça já saiu da impressora! Veja como ficou nos detalhes.</p>
-                      </div>
-                      <Button asChild variant="ghost" size="sm" className="text-primary">
-                        <Link href={`/order-confirmation/${order.id}`}>Ver Foto</Link>
-                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        Sua peça está sendo preparada com carinho por nossa equipe técnica e logo entrará na fila de impressão.
+                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -157,9 +169,9 @@ export default function MyOrdersPage() {
             );
           })
         ) : (
-          <div className="text-center py-20 bg-secondary/10 rounded-2xl border border-dashed border-white/10">
+          <div className="text-center py-24 bg-secondary/10 rounded-2xl border border-dashed border-white/10">
             <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-20" />
-            <p className="text-lg font-semibold text-muted-foreground">Você ainda não iniciou nenhum projeto.</p>
+            <p className="text-lg font-semibold text-muted-foreground">Você ainda não realizou nenhum pedido.</p>
             <Button asChild className="mt-6 bg-primary"><Link href="/products">Ver Catálogo 3D</Link></Button>
           </div>
         )}

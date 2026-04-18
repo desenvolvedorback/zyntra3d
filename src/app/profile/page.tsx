@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -90,7 +91,7 @@ export default function ProfilePage() {
                 <Button asChild variant="secondary" className="h-14 justify-start gap-4 text-lg">
                   <Link href="/my-orders">
                     <ShoppingBag className="h-6 w-6 text-primary" />
-                    Meus Pedidos 3D
+                    Meus Pedidos
                   </Link>
                 </Button>
                 <Button variant="outline" className="h-14 justify-start gap-4 text-lg border-white/10 hover:bg-white/5">

@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 
@@ -88,7 +89,7 @@ export function UserNav() {
           <DropdownMenuItem asChild className="cursor-pointer hover:bg-primary/10 focus:bg-primary/10">
             <Link href="/my-orders" className="flex items-center">
               <ShoppingBag className="mr-2 h-4 w-4 text-accent" />
-              <span>Meus Projetos</span>
+              <span>Meus Pedidos</span>
             </Link>
           </DropdownMenuItem>
           {isAdmin && (

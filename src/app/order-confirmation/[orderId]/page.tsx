@@ -8,7 +8,7 @@ import type { Order } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Package, Truck, Zap } from "lucide-react";
+import { CheckCircle2, MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Package, Truck, Zap, AlertCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { formatInTimeZone } from 'date-fns-tz';
 import { ptBR } from "date-fns/locale";
@@ -16,6 +16,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useParams } from "next/navigation";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const STATUS_STEPS = [
   { id: 'paid', label: 'Pago', icon: Zap },
@@ -26,16 +27,17 @@ const STATUS_STEPS = [
 ];
 
 export default function OrderConfirmationPage() {
-  const { orderId } = useParams();
+  const params = useParams();
+  const orderId = params.orderId as string;
+  
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const timeZone = 'America/Sao_Paulo';
 
   useEffect(() => {
     async function fetchOrder() {
       if (!orderId) return;
       try {
-        const docRef = doc(db, "orders", orderId as string);
+        const docRef = doc(db, "orders", orderId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -68,7 +70,7 @@ export default function OrderConfirmationPage() {
     return (
       <div className="container py-20 text-center space-y-4">
         <h2 className="text-4xl font-headline text-primary">Projeto não localizado</h2>
-        <p className="text-muted-foreground">Não encontramos o pedido #{orderId} no sistema Zyntra.</p>
+        <p className="text-muted-foreground">Não encontramos o pedido no sistema Zyntra.</p>
         <Button asChild><Link href="/products">Voltar para a Oficina</Link></Button>
       </div>
     );
@@ -76,6 +78,7 @@ export default function OrderConfirmationPage() {
 
   const isPaid = order.status !== 'pending' && order.status !== 'cancelled';
   const digitalItems = order.items.filter(item => item.digitalLink);
+  const hasPhysicalItems = order.items.some(item => !item.digitalLink);
 
   const phoneNumber = "5514998561335";
   const message = `Olá Zyntra 3D! Gostaria de confirmar meu pedido.\n\n*Nº do Pedido:* ${order.orderNumber}\n*Status:* ${order.status}\n*Total:* R$ ${order.total.toFixed(2)}`;
@@ -88,15 +91,15 @@ export default function OrderConfirmationPage() {
             <div className="p-4 rounded-full bg-primary/10 mb-4 animate-bounce">
               <Printer className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="text-4xl font-headline text-primary">Sucesso, Maker!</CardTitle>
+            <CardTitle className="text-4xl font-headline text-primary">Status do Pedido</CardTitle>
             <CardDescription className="text-lg">
-                Seu projeto #{order.orderNumber} está no sistema Zyntra 3D.
+                Projeto #{order.orderNumber} • Acompanhe cada camada aqui.
             </CardDescription>
         </CardHeader>
         
         <CardContent className="p-8 space-y-10">
             {/* Status Visual Timeline para Itens Físicos */}
-            {!digitalItems.length && (
+            {hasPhysicalItems && (
               <div className="space-y-6">
                 <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase tracking-widest text-center justify-center">
                   Progresso na Oficina
@@ -104,7 +107,6 @@ export default function OrderConfirmationPage() {
                 <div className="flex justify-between items-start relative max-w-2xl mx-auto">
                    <div className="absolute top-5 left-0 right-0 h-0.5 bg-white/5 -z-0" />
                    {STATUS_STEPS.map((step, idx) => {
-                     const isActive = order.status === step.id || (order.status === 'delivered' && idx < STATUS_STEPS.length);
                      const isPast = ['paid', 'processing', 'printing', 'ready', 'shipped', 'delivered'].indexOf(order.status) >= ['paid', 'processing', 'printing', 'ready', 'shipped'].indexOf(step.id);
                      
                      return (
@@ -133,8 +135,35 @@ export default function OrderConfirmationPage() {
                       </Button>
                     ))}
                  </div>
-                 <p className="text-[10px] text-muted-foreground text-center italic">Você também pode acessar esses links a qualquer momento em "Meus Projetos".</p>
+                 <p className="text-[10px] text-muted-foreground text-center italic">Você tem acesso vitalício a esses arquivos através da sua conta Zyntra.</p>
               </div>
+            )}
+
+            {/* Alertas de Logística */}
+            {order.status === 'shipped' && order.trackingLink ? (
+              <Alert className="bg-indigo-500/10 border-indigo-500/30">
+                <Truck className="h-4 w-4 text-indigo-500" />
+                <AlertTitle className="text-indigo-500 font-bold">Pedido em Trânsito!</AlertTitle>
+                <AlertDescription>
+                  Seu projeto já saiu da oficina. <a href={order.trackingLink} target="_blank" className="underline font-bold">Clique aqui para rastrear o envio em tempo real.</a>
+                </AlertDescription>
+              </Alert>
+            ) : order.status === 'shipped' ? (
+               <Alert className="bg-amber-500/10 border-amber-500/30">
+                <Truck className="h-4 w-4 text-amber-500" />
+                <AlertTitle className="text-amber-500 font-bold">Saiu para Entrega</AlertTitle>
+                <AlertDescription>
+                  Seu pedido está com o entregador Zyntra Logística. Você será notificado ao chegar em seu endereço.
+                </AlertDescription>
+              </Alert>
+            ) : hasPhysicalItems && (
+              <Alert className="bg-primary/10 border-primary/20">
+                <Clock className="h-4 w-4 text-primary" />
+                <AlertTitle className="text-primary font-bold">Aguardando Postagem</AlertTitle>
+                <AlertDescription>
+                  Seu projeto ainda está em fase de produção ou acabamento. O link de rastreio aparecerá aqui assim que for postado.
+                </AlertDescription>
+              </Alert>
             )}
 
             {order.previewImageUrl && (
@@ -151,10 +180,10 @@ export default function OrderConfirmationPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <div className="space-y-4">
                   <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase">
-                    <MapPin className="h-4 w-4" /> Logística
+                    <MapPin className="h-4 w-4" /> Logística de Entrega
                   </h3>
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5 h-24 flex flex-col justify-center">
-                    <p className="font-medium">{order.delivery ? "Entrega programada em Botucatu" : "Retirada em Unidade"}</p>
+                    <p className="font-medium">{order.delivery ? "Entrega programada em Botucatu" : "Retirada em Unidade Zyntra"}</p>
                     {order.delivery && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order.location}</p>}
                   </div>
                </div>
@@ -164,14 +193,14 @@ export default function OrderConfirmationPage() {
                   </h3>
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5 h-24 flex flex-col justify-center">
                      <Badge className={`w-fit py-1 px-4 uppercase ${isPaid ? 'bg-green-500/20 text-green-500' : 'bg-amber-500/20 text-amber-500'}`}>
-                        {order.status === 'pending' ? 'Aguardando Pagamento' : order.status}
+                        {order.status === 'pending' ? 'Aguardando Pagamento' : "Pagamento Confirmado"}
                      </Badge>
                   </div>
                </div>
             </div>
 
             <div className="space-y-4">
-               <h3 className="font-bold text-primary text-xs uppercase tracking-widest">Resumo do Investimento</h3>
+               <h3 className="font-bold text-primary text-xs uppercase tracking-widest">Resumo do Pedido</h3>
                <div className="bg-secondary/20 rounded-2xl border border-white/5 overflow-hidden">
                  <Table>
                   <TableBody>
@@ -188,7 +217,7 @@ export default function OrderConfirmationPage() {
                           </TableRow>
                       )}
                       <TableRow className="bg-primary/5 hover:bg-primary/5 border-none">
-                        <TableCell className="font-bold text-lg text-primary">TOTAL</TableCell>
+                        <TableCell className="font-bold text-lg text-primary">TOTAL PAGO</TableCell>
                         <TableCell className="text-right font-bold text-lg text-primary">R$ {order.total.toFixed(2)}</TableCell>
                       </TableRow>
                   </TableBody>
@@ -198,7 +227,7 @@ export default function OrderConfirmationPage() {
 
             {!isPaid && (
               <div className="text-center space-y-6 pt-4 border-t border-white/5">
-                  <h4 className="font-headline text-3xl text-primary">Próximo Passo</h4>
+                  <h4 className="font-headline text-3xl text-primary">Aguardando Pagamento</h4>
                   <p className="text-muted-foreground text-sm max-w-md mx-auto">
                     Caso tenha pago via Pix manual ou queira agilizar a produção, envie o comprovante no nosso canal técnico.
                   </p>
@@ -216,7 +245,7 @@ export default function OrderConfirmationPage() {
                 <Link href="/products">Continuar na Oficina</Link>
             </Button>
             <Button asChild variant="outline" className="border-primary/20">
-                <Link href="/my-orders">Histórico de Projetos</Link>
+                <Link href="/my-orders">Meus Pedidos</Link>
             </Button>
         </CardFooter>
       </Card>

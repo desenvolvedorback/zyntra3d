@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
 import { UserNav } from "@/components/auth/UserNav";
 import { CartSheet } from "@/components/cart/CartSheet";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Printer, Package, Info, Home, Newspaper } from "lucide-react";
@@ -52,6 +52,11 @@ export function Header() {
                       </Link>
                     </SheetClose>
                   ))}
+                  <SheetClose asChild>
+                    <Link href="/my-orders" className="flex items-center gap-4 rounded-md px-4 py-3 text-lg font-medium text-foreground/80 hover:bg-primary/10 hover:text-primary transition-all">
+                      <Package className="h-5 w-5" /> Meus Pedidos
+                    </Link>
+                  </SheetClose>
                 </nav>
               </div>
             </SheetContent>
