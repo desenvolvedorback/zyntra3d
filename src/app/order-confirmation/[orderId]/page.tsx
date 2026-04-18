@@ -45,25 +45,32 @@ export default function OrderConfirmationPage() {
         
         setOrder(orderData);
 
-        // Fallback para buscar links digitais se não estiverem no pedido
+        // Fallback robusto para buscar links digitais se não estiverem no pedido
         const links: Record<string, string> = {};
         for (const item of orderData.items) {
           const isDigitalSearch = item.isDigital || 
                                   item.title.toLowerCase().includes('pack') || 
-                                  item.title.toLowerCase().includes('arquivo');
+                                  item.title.toLowerCase().includes('arquivo') ||
+                                  !!item.digitalLink;
           
-          if (isDigitalSearch && !item.digitalLink) {
-            try {
-              const prodRef = doc(db, "products", item.id);
-              const prodSnap = await getDoc(prodRef);
-              if (prodSnap.exists()) {
-                const prodData = prodSnap.data() as Product;
-                if (prodData.digitalLink) {
-                  links[item.id] = prodData.digitalLink;
+          if (isDigitalSearch) {
+            // Se já tem link no item, usa ele
+            if (item.digitalLink) {
+              links[item.id] = item.digitalLink;
+            } else {
+              // Senão busca no catálogo original
+              try {
+                const prodRef = doc(db, "products", item.id);
+                const prodSnap = await getDoc(prodRef);
+                if (prodSnap.exists()) {
+                  const prodData = prodSnap.data() as Product;
+                  if (prodData.digitalLink) {
+                    links[item.id] = prodData.digitalLink;
+                  }
                 }
+              } catch (e) {
+                console.error("Erro ao buscar link de fallback:", e);
               }
-            } catch (e) {
-              console.error("Erro ao buscar link de fallback:", e);
             }
           }
         }
@@ -169,7 +176,7 @@ export default function OrderConfirmationPage() {
                  </div>
                  <div className="grid gap-4">
                     {digitalItems.map((item, idx) => {
-                      const finalLink = item.digitalLink || resolvedLinks[item.id];
+                      const finalLink = resolvedLinks[item.id] || item.digitalLink;
                       return (
                         <Button key={idx} asChild className="w-full bg-green-600 hover:bg-green-700 h-14 shadow-lg text-lg font-bold group">
                           <a href={finalLink || "#"} target="_blank" rel="noopener noreferrer">
@@ -181,7 +188,7 @@ export default function OrderConfirmationPage() {
                     })}
                  </div>
                  <p className="text-[11px] text-muted-foreground text-center italic leading-relaxed">
-                   Os links levam ao nosso armazenamento seguro. Você também pode acessar esses arquivos em "Meus Pedidos".
+                   Os links levam ao nosso armazenamento seguro no Google Drive. Se o botão não abrir, verifique se o navegador bloqueou o pop-up.
                  </p>
               </div>
             )}
@@ -221,7 +228,7 @@ export default function OrderConfirmationPage() {
                </div>
                <div className="space-y-4">
                   <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase">
-                    <Clock className="h-4 w-4" /> Status Financeiro
+                    <Zap className="h-4 w-4" /> Status Financeiro
                   </h3>
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5 h-24 flex flex-col justify-center">
                      <Badge className={`w-fit py-1 px-4 uppercase ${isPaid ? 'bg-green-500/20 text-green-500' : 'bg-destructive/20 text-destructive'}`}>

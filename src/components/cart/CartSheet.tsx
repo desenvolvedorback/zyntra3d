@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -29,19 +30,21 @@ import { db } from "@/lib/firebase";
 import { doc, runTransaction, collection, setDoc, serverTimestamp } from "firebase/firestore";
 
 export function CartSheet() {
+  const cartContext = useCart();
+  
   const {
-    cartItems,
-    cartCount,
-    totalPrice,
-    clearCart,
-    loading: cartLoading,
-    delivery,
-    setDelivery,
-    location,
-    setLocation,
-    finalDeliveryFee,
-    getDiscountedPrice
-  } = useCart();
+    cartItems = [],
+    cartCount = 0,
+    totalPrice = 0,
+    clearCart = () => {},
+    loading: cartLoading = false,
+    delivery = false,
+    setDelivery = () => {},
+    location = "",
+    setLocation = () => {},
+    finalDeliveryFee = 0,
+    getDiscountedPrice = (item: any) => item.price
+  } = cartContext || {};
 
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
@@ -139,36 +142,34 @@ export function CartSheet() {
 
         await setDoc(orderRef, orderPayload);
 
-        // PASS ONLY PLAIN DATA TO SERVER ACTION
+        // PASS APENAS DADOS SIMPLES PARA EVITAR ERRO DE SERIALIZAÇÃO 500
         const checkoutUrl = await mercadoPagoCheckout({
           items: orderPayload.items.map(i => ({
-            id: i.id,
-            title: i.title,
-            quantity: i.quantity,
-            unit_price: i.unit_price
+            id: String(i.id),
+            title: String(i.title),
+            quantity: Number(i.quantity),
+            unit_price: Number(i.unit_price)
           })),
           user: {
-            uid: userProfile.uid,
-            email: userProfile.email,
-            displayName: userProfile.displayName,
-            cpf: userProfile.cpf,
-            phone: userProfile.phone || contactPhone || ""
+            uid: String(userProfile.uid),
+            email: String(userProfile.email),
+            displayName: String(userProfile.displayName),
+            cpf: String(userProfile.cpf || ""),
+            phone: String(userProfile.phone || contactPhone || "")
           },
-          deliveryFee: orderPayload.deliveryFee,
-          location: orderPayload.location,
-          orderId: orderRef.id,
-          orderNumber: orderNumber,
-          observation: observation,
-          contactPhone: orderPayload.contactPhone,
+          deliveryFee: Number(orderPayload.deliveryFee),
+          location: String(orderPayload.location),
+          orderId: String(orderRef.id),
+          orderNumber: Number(orderNumber),
         });
 
         if (checkoutUrl) {
           window.location.href = checkoutUrl;
         } else {
-          throw new Error("Erro ao gerar link de pagamento.");
+          throw new Error("O servidor do Mercado Pago não respondeu. Tente novamente em instantes.");
         }
       } catch (error: any) {
-        toast({ variant: "destructive", title: "Falha na Produção", description: error.message || "Não conseguimos iniciar o checkout. Tente novamente." });
+        toast({ variant: "destructive", title: "Falha no Pagamento", description: error.message || "Erro ao gerar link. Tente novamente." });
       }
     });
   }

@@ -38,24 +38,24 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zyntra3d.onrender.com';
 
     const nameParts = (user.displayName || "Maker Zyntra").split(' ');
-    const firstName = nameParts[0];
+    const firstName = nameParts[0] || "Maker";
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Zyntra';
 
     const cleanPhone = (phone: string) => {
       const p = (phone || "").replace(/[^0-9]/g, "");
-      return p.length >= 10 ? p : "14999999999";
+      return p.length >= 10 ? p : "14999102398";
     };
     
     const userPhone = cleanPhone(user.phone || "");
     const areaCode = userPhone.substring(0, 2) || "14";
-    const phoneNumber = userPhone.substring(2) || "999999999";
+    const phoneNumber = userPhone.substring(2) || "991023986";
 
     const cleanCpf = (cpf: string) => {
       const c = (cpf || "").replace(/[^0-9]/g, "");
       return c.length === 11 ? c : "00000000000";
     };
 
-    const isDelivery = (deliveryFee || 0) > 0 && !!location && location !== 'Retirada Unidade Botucatu';
+    const isDelivery = (deliveryFee || 0) > 0 && !!location && !location.toLowerCase().includes('retirada');
     
     const preferenceItems = items.map((item) => ({
       id: String(item.id),
@@ -75,7 +75,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
       });
     }
 
-    const preferenceBody: any = {
+    const preferenceBody = {
       items: preferenceItems,
       payer: {
         name: firstName,
@@ -95,7 +95,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         failure: `${siteUrl}/products`,
         pending: `${siteUrl}/order-confirmation/${orderId}`,
       },
-      auto_return: 'approved',
+      auto_return: 'approved' as const,
       metadata: {
         order_id: orderId,
         user_id: user.uid,
@@ -104,10 +104,15 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     };
 
     const result = await preference.create({ body: preferenceBody });
-    return result.init_point || null;
+    
+    if (!result.init_point) {
+      throw new Error("Mercado Pago não retornou init_point");
+    }
+
+    return result.init_point;
 
   } catch (error: any) {
-    console.error("[Zyntra MP Error]:", error.message);
+    console.error("[Zyntra MP Error]:", error);
     return null;
   }
 }
