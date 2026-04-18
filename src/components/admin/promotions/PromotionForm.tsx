@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,6 +7,8 @@ import type { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { collection, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -15,7 +18,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import type { Promotion, Product } from "@/lib/types";
 import { promotionSchema } from "@/lib/promotion-schema";
-import { addPromotion, updatePromotion } from "@/lib/actions/promotionActions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
@@ -49,19 +51,27 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
     setLoading(true);
     try {
       if (initialData) {
-        await updatePromotion(initialData.id, data);
-        toast({ title: "Sucesso", description: "Promoção atualizada." });
+        const promoRef = doc(db, "promotions", initialData.id);
+        await updateDoc(promoRef, {
+          ...data,
+          updatedAt: serverTimestamp(),
+        });
+        toast({ title: "Sucesso", description: "Promoção atualizada com sucesso." });
       } else {
-        await addPromotion(data);
-        toast({ title: "Sucesso", description: "Promoção criada." });
+        const promosCollection = collection(db, "promotions");
+        await addDoc(promosCollection, {
+          ...data,
+          createdAt: serverTimestamp(),
+        });
+        toast({ title: "Sucesso", description: "Promoção criada com sucesso." });
       }
       router.push("/admin/promotions");
       router.refresh();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Algo deu errado.",
+        title: "Erro ao salvar",
+        description: error.message || "Algo deu errado. Verifique suas permissões.",
       });
     } finally {
       setLoading(false);
@@ -69,9 +79,9 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
   };
 
   return (
-    <Card>
+    <Card className="bg-secondary/10 border-white/5">
       <CardHeader>
-        <CardTitle>{initialData ? "Editar Promoção" : "Criar Promoção"}</CardTitle>
+        <CardTitle className="text-primary">{initialData ? "Editar Promoção" : "Criar Promoção"}</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -84,7 +94,7 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
                   <FormItem>
                     <FormLabel>Nome da Promoção</FormLabel>
                     <FormControl>
-                      <Input placeholder="ex: Queima de Estoque" {...field} disabled={loading} />
+                      <Input placeholder="ex: Queima de Estoque" {...field} disabled={loading} className="bg-background/50" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -94,7 +104,7 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
                 control={form.control}
                 name="isActive"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border border-white/10 p-4">
                     <div className="space-y-0.5">
                       <FormLabel>Ativar Promoção</FormLabel>
                       <FormDescription>
@@ -120,7 +130,7 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
                     <FormLabel>Tipo de Promoção</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-background/50">
                           <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
                       </FormControl>
@@ -143,7 +153,7 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
                       <FormLabel>Produto</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-background/50">
                             <SelectValue placeholder="Selecione um produto" />
                           </SelectTrigger>
                         </FormControl>
@@ -169,7 +179,7 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
                     <FormLabel>Tipo de Desconto</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-background/50">
                           <SelectValue placeholder="Selecione o tipo de desconto" />
                         </SelectTrigger>
                       </FormControl>
@@ -190,7 +200,7 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
                   <FormItem>
                     <FormLabel>Valor do Desconto</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="ex: 10 para 10% ou 5 para R$5,00" {...field} disabled={loading} />
+                      <Input type="number" placeholder="ex: 10 para 10% ou 5 para R$5,00" {...field} disabled={loading} className="bg-background/50" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -198,13 +208,13 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
               />
             </div>
             
-            <Separator className="mt-8"/>
+            <Separator className="opacity-10"/>
 
             <div className="flex justify-end gap-4">
               <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading} className="bg-primary hover:bg-primary/80">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {initialData ? "Salvar Alterações" : "Criar Promoção"}
               </Button>

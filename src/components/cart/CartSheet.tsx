@@ -114,7 +114,7 @@ export function CartSheet() {
       try {
         const orderNumber = await getNextOrderNumber();
         const orderRef = doc(collection(db, "orders"));
-        const isDelivery = (finalDeliveryFee || 0) > 0 && !!location;
+        const isDelivery = delivery && !!location;
 
         const orderPayload = {
           orderNumber,
@@ -125,7 +125,7 @@ export function CartSheet() {
             title: item.name,
             quantity: item.quantity,
             unit_price: item.price,
-            isDigital: !!item.isDigital, // Salva o tipo explicitamente no pedido
+            isDigital: !!item.isDigital,
             digitalLink: item.digitalLink || "",
           })),
           customer: {
