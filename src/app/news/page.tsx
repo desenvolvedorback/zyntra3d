@@ -58,7 +58,7 @@ export default function NewsPage() {
             <Card key={article.id} className="bg-secondary/20 border-white/5 overflow-hidden group hover:border-primary/50 transition-all flex flex-col">
               <Link href={`/news/${article.id}`} className="block relative h-56 overflow-hidden">
                 <Image
-                  src={article.imageUrl || "https://files.catbox.moe/9m67rz.png"}
+                  src={article.imageUrl || "https://images2.imgbox.com/e1/73/NCTdPsgZ_o.png"}
                   alt={article.title}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
