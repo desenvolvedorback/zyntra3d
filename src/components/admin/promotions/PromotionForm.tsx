@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,7 +34,14 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
 
   const form = useForm<PromotionFormValues>({
     resolver: zodResolver(promotionSchema),
-    defaultValues: initialData || {
+    defaultValues: initialData ? {
+      name: initialData.name,
+      type: initialData.type,
+      discountType: initialData.discountType,
+      discountValue: initialData.discountValue,
+      productId: initialData.productId || "",
+      isActive: initialData.isActive,
+    } : {
       name: "",
       type: "product",
       discountType: "percentage",
@@ -56,25 +62,23 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
           ...data,
           updatedAt: serverTimestamp(),
         });
-        toast({ title: "Sucesso", description: "Promoção atualizada com sucesso." });
+        toast({ title: "Sucesso", description: "Promoção atualizada." });
       } else {
         const promosCollection = collection(db, "promotions");
         await addDoc(promosCollection, {
           ...data,
           createdAt: serverTimestamp(),
         });
-        toast({ title: "Sucesso", description: "Promoção criada com sucesso." });
+        toast({ title: "Sucesso", description: "Promoção criada." });
       }
       
       router.push("/admin/promotions");
       router.refresh();
-
     } catch (error: any) {
-      console.error("Erro ao salvar promoção:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao salvar",
-        description: error.message || "Algo deu errado. Verifique suas permissões de administrador.",
+        title: "Erro ao Salvar",
+        description: "Verifique sua conexão e permissões administrativas.",
       });
     } finally {
       setLoading(false);
@@ -82,7 +86,7 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
   };
 
   return (
-    <Card className="bg-secondary/10 border-white/5 shadow-xl">
+    <Card className="bg-secondary/10 border-white/5">
       <CardHeader>
         <CardTitle className="text-primary font-headline text-2xl">{initialData ? "Editar Promoção" : "Criar Promoção"}</CardTitle>
       </CardHeader>
@@ -97,7 +101,7 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
                   <FormItem>
                     <FormLabel>Nome da Promoção</FormLabel>
                     <FormControl>
-                      <Input placeholder="ex: Queima de Estoque" {...field} disabled={loading} className="bg-background/50" />
+                      <Input placeholder="ex: Oferta de Lançamento" {...field} disabled={loading} className="bg-background/50" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -110,9 +114,6 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border border-white/10 p-4 bg-background/30">
                     <div className="space-y-0.5">
                       <FormLabel>Ativar Promoção</FormLabel>
-                      <FormDescription>
-                        Marque para ativar esta promoção no site.
-                      </FormDescription>
                     </div>
                     <FormControl>
                       <Switch
@@ -183,7 +184,7 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
                     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
                       <FormControl>
                         <SelectTrigger className="bg-background/50">
-                          <SelectValue placeholder="Selecione o tipo de desconto" />
+                          <SelectValue placeholder="Selecione o tipo" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -203,7 +204,7 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
                   <FormItem>
                     <FormLabel>Valor do Desconto</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="ex: 10 para 10% ou 5 para R$5,00" {...field} disabled={loading} className="bg-background/50" />
+                      <Input type="number" step="0.01" placeholder="ex: 15" {...field} disabled={loading} className="bg-background/50" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

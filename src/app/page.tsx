@@ -1,4 +1,3 @@
-
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { News, Product } from "@/lib/types";
+import type { News, Product, Promotion } from "@/lib/types";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { applyPromotions } from "@/lib/promotions";
 import { Cpu, Printer, Box, Share2, Zap, Newspaper, Calendar } from "lucide-react";
@@ -35,7 +34,7 @@ async function getFeaturedProducts() {
         isDigital: !!data.isDigital,
         digitalLink: data.digitalLink || "",
         createdAt: data.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
-      };
+      } as any;
     });
 
     const promotionsCollection = collection(db, "promotions");
@@ -52,10 +51,10 @@ async function getFeaturedProducts() {
         productId: data.productId || "",
         isActive: !!data.isActive,
         createdAt: data.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
-      };
+      } as any;
     });
     
-    return applyPromotions(products as any, promotions as any);
+    return applyPromotions(products as Product[], promotions as Promotion[]);
   } catch (error) {
     console.error("Erro ao buscar produtos:", error);
     return [];
@@ -107,8 +106,8 @@ export default async function HomePage() {
             fill
             className="object-cover -z-10 opacity-40 grayscale hover:grayscale-0 transition-all duration-1000"
             priority
-            sizes="100vw"
             data-ai-hint="3d printer neon"
+            sizes="100vw"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
@@ -172,8 +171,8 @@ export default async function HomePage() {
                     alt={product.name}
                     fill
                     className="object-cover group-hover:scale-110 transition-all duration-500"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                     data-ai-hint={product.category}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                   />
                 </div>
                 <CardContent className="p-6">
@@ -191,7 +190,10 @@ export default async function HomePage() {
                       )}
                     </div>
                     <div className="w-12 h-12">
-                       <AddToCartButton product={product as any} />
+                       <AddToCartButton product={{
+                         ...product,
+                         createdAt: new Date(product.createdAt)
+                       } as any} />
                     </div>
                   </div>
                 </CardContent>
@@ -214,7 +216,7 @@ export default async function HomePage() {
               <Link href={`/news/${news.id}`} key={news.id} className="group">
                 <Card className="bg-secondary/20 border-white/5 overflow-hidden hover:border-primary/30 transition-all h-full">
                   <div className="relative h-48 overflow-hidden">
-                    <Image src={news.imageUrl} alt={news.title} fill className="object-cover transition-transform group-hover:scale-105" unoptimized sizes="(max-width: 768px) 100vw, 33vw" />
+                    <Image src={news.imageUrl} alt={news.title} fill className="object-cover transition-transform group-hover:scale-105" sizes="(max-width: 768px) 100vw, 33vw" />
                   </div>
                   <CardContent className="p-6">
                     <div className="flex items-center gap-2 text-[10px] text-accent font-bold uppercase mb-2">

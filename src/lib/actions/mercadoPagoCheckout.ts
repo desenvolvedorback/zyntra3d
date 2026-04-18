@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { UserProfile } from "@/lib/types";
@@ -25,40 +24,40 @@ interface MercadoPagoCheckoutArgs {
 export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promise<string | null> {
   const { items, userProfile, deliveryFee = 0, location = '', orderId, orderNumber, observation = '', contactPhone = '' } = args;
 
-  // Chaves de produção fornecidas pelo usuário
+  // Chaves de produção oficiais Zyntra 3D
   const accessToken = 'APP_USR-4873657725416680-041519-a1a2d79c61cee7f1cfa105b8bd7e2db4-99290797';
   
-  const client = new MercadoPagoConfig({ accessToken });
-  const preference = new Preference(client);
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zyntra3d.onrender.com';
-
-  const nameParts = userProfile.displayName?.split(' ') || ['Maker', 'Zyntra'];
-  const firstName = nameParts[0];
-  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Zyntra';
-
-  const cleanPhone = (phone: string) => {
-    const p = phone.replace(/[^0-9]/g, "");
-    return p.length >= 10 ? p : "14999999999";
-  };
-  
-  const userPhone = cleanPhone(userProfile.phone || contactPhone);
-  const areaCode = userPhone.substring(0, 2);
-  const phoneNumber = userPhone.substring(2);
-
-  const cleanCpf = (cpf: string) => {
-    const c = cpf.replace(/[^0-9]/g, "");
-    return c.length === 11 ? c : "00000000000";
-  };
-
   try {
+    const client = new MercadoPagoConfig({ accessToken });
+    const preference = new Preference(client);
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://zyntra3d.onrender.com';
+
+    const nameParts = userProfile.displayName?.split(' ') || ['Maker', 'Zyntra'];
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Zyntra';
+
+    const cleanPhone = (phone: string) => {
+      const p = phone.replace(/[^0-9]/g, "");
+      return p.length >= 10 ? p : "14999999999";
+    };
+    
+    const userPhone = cleanPhone(userProfile.phone || contactPhone || "");
+    const areaCode = userPhone.substring(0, 2) || "14";
+    const phoneNumber = userPhone.substring(2) || "999999999";
+
+    const cleanCpf = (cpf: string) => {
+      const c = cpf.replace(/[^0-9]/g, "");
+      return c.length === 11 ? c : "00000000000";
+    };
+
     const isDelivery = (deliveryFee || 0) > 0 && !!location;
     
     const preferenceItems = items.map((item) => ({
       id: item.id,
       title: item.title,
       quantity: item.quantity,
-      unit_price: item.unit_price,
+      unit_price: Number(item.unit_price.toFixed(2)),
       currency_id: 'BRL',
     }));
 
@@ -67,7 +66,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         id: 'delivery_fee',
         title: 'Zyntra Logística - Entrega Botucatu',
         quantity: 1,
-        unit_price: deliveryFee || 0,
+        unit_price: Number(deliveryFee.toFixed(2)),
         currency_id: 'BRL',
       });
     }
@@ -84,7 +83,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         },
         identification: {
           type: 'CPF',
-          number: cleanCpf(userProfile.cpf),
+          number: cleanCpf(userProfile.cpf || ""),
         },
       },
       back_urls: {
@@ -104,13 +103,13 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     const result = await preference.create({ body: preferenceBody });
     
     if (!result.init_point) {
-      throw new Error("Não foi possível gerar o link de pagamento.");
+      throw new Error("Ponto de iniciação não retornado pelo Mercado Pago.");
     }
 
     return result.init_point;
 
   } catch (error: any) {
-    console.error("Erro no Mercado Pago:", error.message);
-    throw new Error(error.message || "Erro ao iniciar pagamento no Mercado Pago.");
+    console.error("[Zyntra MP Error]:", error.message);
+    throw new Error(error.message || "Erro ao conectar com o Mercado Pago.");
   }
 }
