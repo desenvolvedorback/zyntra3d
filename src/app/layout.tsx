@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: 'Zyntra 3D | Oficina de Impressão e Projetos 3D',
   description: 'Prototipagem, miniaturas e arquivos 3D com precisão industrial em Botucatu.',
   icons: {
-    icon: 'https://files.catbox.moe/4my793.png',
+    icon: 'https://images2.imgbox.com/e1/73/NCTdPsgZ_o.png',
   }
 };
 
@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning className="dark">
       <head>
-        <link rel="icon" href="https://files.catbox.moe/4my793.png" />
+        <link rel="icon" href="https://images2.imgbox.com/e1/73/NCTdPsgZ_o.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;700&family=Belleza&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
