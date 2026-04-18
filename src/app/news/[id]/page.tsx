@@ -94,7 +94,7 @@ export default function NewsDetailPage() {
 
       <div className="relative aspect-video w-full rounded-2xl overflow-hidden mb-12 border border-white/5 shadow-2xl">
         <Image
-          src={article.imageUrl || "https://files.catbox.moe/9m67rz.png"}
+          src={article.imageUrl || "https://images2.imgbox.com/e1/73/NCTdPsgZ_o.png"}
           alt={article.title}
           fill
           className="object-cover"
