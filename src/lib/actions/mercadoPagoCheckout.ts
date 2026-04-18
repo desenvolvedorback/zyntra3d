@@ -3,8 +3,6 @@
 
 import type { UserProfile } from "@/lib/types";
 import { MercadoPagoConfig, Preference } from 'mercadopago';
-import { db } from "@/lib/firebase";
-import { collection, doc, runTransaction, serverTimestamp, setDoc } from "firebase/firestore";
 
 interface CheckoutItem {
     id: string;
@@ -18,41 +16,16 @@ interface MercadoPagoCheckoutArgs {
   userProfile: UserProfile;
   deliveryFee?: number;
   location?: string;
-  deliverySlot?: 'morning' | 'afternoon';
+  orderId: string;
+  orderNumber: number;
   observation?: string;
   contactPhone?: string;
 }
 
-async function getNextOrderNumber(): Promise<number> {
-  const counterRef = doc(db, "counters", "orderCounter");
-
-  try {
-    const newOrderNumber = await runTransaction(db, async (transaction) => {
-      const counterDoc = await transaction.get(counterRef);
-      
-      let nextNumber;
-      if (!counterDoc.exists()) {
-        nextNumber = 1001;
-        transaction.set(counterRef, { lastNumber: nextNumber });
-      } else {
-        const lastNumber = counterDoc.data().lastNumber || 1000;
-        nextNumber = lastNumber + 1;
-        transaction.update(counterRef, { lastNumber: nextNumber });
-      }
-      
-      return nextNumber;
-    });
-    return newOrderNumber;
-  } catch (error) {
-    console.error("Error generating order number: ", error);
-    return Date.now() % 1000000;
-  }
-}
-
 export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promise<string | null> {
-  const { items, userProfile, deliveryFee = 0, location = '', deliverySlot, observation = '', contactPhone = '' } = args;
+  const { items, userProfile, deliveryFee = 0, location = '', orderId, orderNumber, observation = '', contactPhone = '' } = args;
 
-  // Utilizando chaves de produção fornecidas
+  // Chaves de produção fornecidas pelo usuário
   const accessToken = 'APP_USR-4873657725416680-041519-a1a2d79c61cee7f1cfa105b8bd7e2db4-99290797';
   
   const client = new MercadoPagoConfig({ accessToken });
@@ -64,7 +37,6 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const firstName = nameParts[0];
   const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Zyntra';
 
-  // Limpeza de dados para MP
   const cleanPhone = (phone: string) => {
     const p = phone.replace(/[^0-9]/g, "");
     return p.length >= 10 ? p : "14999999999";
@@ -73,42 +45,14 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
   const userPhone = cleanPhone(userProfile.phone || contactPhone);
   const areaCode = userPhone.substring(0, 2);
   const phoneNumber = userPhone.substring(2);
+
   const cleanCpf = (cpf: string) => {
     const c = cpf.replace(/[^0-9]/g, "");
     return c.length === 11 ? c : "00000000000";
   };
 
   try {
-    const orderNumber = await getNextOrderNumber();
-    const orderRef = doc(collection(db, "orders"));
     const isDelivery = (deliveryFee || 0) > 0 && !!location;
-
-    const orderPayload = {
-      orderNumber,
-      status: 'pending' as const,
-      total: items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0) + (isDelivery ? (deliveryFee || 0) : 0),
-      items: items.map(item => ({
-        id: item.id,
-        title: item.title,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-      })),
-      customer: {
-        id: userProfile.uid,
-        name: userProfile.displayName || "Usuário Zyntra",
-        email: userProfile.email || "cliente@zyntra.com",
-      },
-      delivery: isDelivery,
-      deliveryFee: isDelivery ? (deliveryFee || 0) : 0,
-      location: isDelivery ? (location || '') : '',
-      deliverySlot: isDelivery ? (deliverySlot || null) : null,
-      observation: observation || '',
-      contactPhone: contactPhone || userProfile.phone || '',
-      createdAt: serverTimestamp(),
-      paymentId: null,
-    };
-    
-    await setDoc(orderRef, orderPayload);
     
     const preferenceItems = items.map((item) => ({
       id: item.id,
@@ -144,17 +88,17 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
         },
       },
       back_urls: {
-        success: `${siteUrl}/order-confirmation/${orderRef.id}`,
+        success: `${siteUrl}/order-confirmation/${orderId}`,
         failure: `${siteUrl}/products`,
-        pending: `${siteUrl}/order-confirmation/${orderRef.id}`,
+        pending: `${siteUrl}/order-confirmation/${orderId}`,
       },
       auto_return: 'approved',
       notification_url: `${siteUrl}/api/mp-webhook`,
       metadata: {
-        order_id: orderRef.id,
+        order_id: orderId,
         user_id: userProfile.uid,
       },
-      external_reference: orderRef.id,
+      external_reference: orderId,
     };
 
     const result = await preference.create({ body: preferenceBody });
@@ -166,7 +110,7 @@ export async function mercadoPagoCheckout(args: MercadoPagoCheckoutArgs): Promis
     return result.init_point;
 
   } catch (error: any) {
-    console.error("Erro no Checkout Zyntra:", error.message);
+    console.error("Erro no Mercado Pago:", error.message);
     throw new Error(error.message || "Erro ao iniciar pagamento no Mercado Pago.");
   }
 }

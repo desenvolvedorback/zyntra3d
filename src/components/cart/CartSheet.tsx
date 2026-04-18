@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -15,8 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CreditCard, Loader2, ShoppingCart, Trash2, Tag, CalendarDays, Info, Link as LinkIcon, Truck, Box } from "lucide-react";
+import { CreditCard, Loader2, ShoppingCart, Trash2, Link as LinkIcon, Truck, Box } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,6 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthContext } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { mercadoPagoCheckout } from "@/lib/actions/mercadoPagoCheckout";
+import { db } from "@/lib/firebase";
+import { doc, runTransaction, collection, setDoc, serverTimestamp } from "firebase/firestore";
 
 export function CartSheet() {
   const {
@@ -46,7 +48,6 @@ export function CartSheet() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  // Campos Logísticos e 3D
   const [distanceKm, setDistanceKm] = useState<number>(0);
   const [fileLink, setFileLink] = useState("");
   const [observation, setObservation] = useState("");
@@ -58,10 +59,9 @@ export function CartSheet() {
 
   useEffect(() => setIsClient(true), []);
 
-  // Cálculo de Frete Dinâmico (Saindo de Botucatu)
   const dynamicDeliveryFee = useMemo(() => {
-    if (distanceKm <= 5) return 0; // Entrega grátis no centro de Botucatu
-    return distanceKm * 1.5; // R$ 1.50 por KM
+    if (distanceKm <= 5) return 0;
+    return distanceKm * 1.5;
   }, [distanceKm]);
 
   const finalDeliveryFee = useMemo(() => {
@@ -74,12 +74,28 @@ export function CartSheet() {
 
   const finalPrice = delivery ? totalPrice + finalDeliveryFee : totalPrice;
 
-  // Verifica se precisa de link de arquivo (Categoria Arquivos 3D ou Personalizados)
   const needsFileLink = cartItems.some(item => 
     item.category === 'Arquivos 3D' || item.category === 'Personalizados'
   );
 
-  const handleCheckout = () => {
+  const getNextOrderNumber = async (): Promise<number> => {
+    const counterRef = doc(db, "counters", "orderCounter");
+    return await runTransaction(db, async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+      let nextNumber;
+      if (!counterDoc.exists()) {
+        nextNumber = 1001;
+        transaction.set(counterRef, { lastNumber: nextNumber });
+      } else {
+        const lastNumber = counterDoc.data().lastNumber || 1000;
+        nextNumber = lastNumber + 1;
+        transaction.update(counterRef, { lastNumber: nextNumber });
+      }
+      return nextNumber;
+    });
+  };
+
+  const handleCheckout = async () => {
     if (!user || !userProfile) {
       toast({ variant: "destructive", title: "Login Necessário", description: "Faça login para finalizar a compra." });
       router.push('/login');
@@ -98,6 +114,38 @@ export function CartSheet() {
     
     startTransition(async () => {
       try {
+        // 1. Gerar número do pedido e criar documento no Firestore (Lado do Cliente com Auth)
+        const orderNumber = await getNextOrderNumber();
+        const orderRef = doc(collection(db, "orders"));
+        const isDelivery = (finalDeliveryFee || 0) > 0 && !!location;
+
+        const orderPayload = {
+          orderNumber,
+          status: 'pending',
+          total: finalPrice,
+          items: cartItems.map(item => ({
+            id: item.productId,
+            title: item.name,
+            quantity: item.quantity,
+            unit_price: item.price,
+          })),
+          customer: {
+            id: userProfile.uid,
+            name: userProfile.displayName || "Usuário Zyntra",
+            email: userProfile.email || "cliente@zyntra.com",
+          },
+          delivery: isDelivery,
+          deliveryFee: isDelivery ? (finalDeliveryFee || 0) : 0,
+          location: isDelivery ? (location || '') : '',
+          observation: `${observation}${fileLink ? ` | LINK: ${fileLink}` : ''}`,
+          contactPhone: contactPhone || userProfile.phone || '',
+          createdAt: serverTimestamp(),
+          paymentId: null,
+        };
+
+        await setDoc(orderRef, orderPayload);
+
+        // 2. Chamar a Server Action apenas para o Mercado Pago
         const checkoutUrl = await mercadoPagoCheckout({
           items: cartItems.map(item => ({
             id: item.productId,
@@ -108,13 +156,15 @@ export function CartSheet() {
           userProfile,
           deliveryFee: delivery ? finalDeliveryFee : 0,
           location: delivery ? location : "",
-          observation: `${observation}${fileLink ? ` | LINK: ${fileLink}` : ''}`,
+          orderId: orderRef.id,
+          orderNumber: orderNumber,
+          observation: observation,
           contactPhone,
         });
 
         if (checkoutUrl) window.location.href = checkoutUrl;
       } catch (error: any) {
-        toast({ variant: "destructive", title: "Erro no Checkout", description: error.message });
+        toast({ variant: "destructive", title: "Erro no Checkout", description: error.message || "Falha ao processar pedido." });
       }
     });
   }
@@ -152,7 +202,6 @@ export function CartSheet() {
               </div>
               
               <div className="mt-6 space-y-6">
-                {/* Seção de Arquivos */}
                 {needsFileLink && (
                   <div className="space-y-2 p-4 bg-primary/10 border border-primary/20 rounded-lg">
                     <Label className="flex items-center gap-2 text-primary">
@@ -168,7 +217,6 @@ export function CartSheet() {
                   </div>
                 )}
 
-                {/* Seção de Entrega */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="delivery-switch" className="flex flex-col gap-1">

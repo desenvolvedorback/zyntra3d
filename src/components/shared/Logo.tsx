@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -14,10 +15,10 @@ export function Logo({ className }: { className?: string }) {
       aria-label="Zyntra 3D Home"
     >
       <Image 
-        src="https://upper-beige-ephwtqnzgo.edgeone.app/Gemini_Generated_Image_d4wmw0d4wmw0d4wm-photoaidcom-cropped.png"
+        src="https://files.catbox.moe/4my793.png"
         alt="Zyntra 3D Logo"
         width={80}
-        height={20}
+        height={40}
         className="object-contain"
         priority
       />
