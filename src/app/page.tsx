@@ -107,6 +107,7 @@ export default async function HomePage() {
             fill
             className="object-cover -z-10 opacity-40 grayscale hover:grayscale-0 transition-all duration-1000"
             priority
+            sizes="100vw"
             data-ai-hint="3d printer neon"
           />
         )}
@@ -171,6 +172,7 @@ export default async function HomePage() {
                     alt={product.name}
                     fill
                     className="object-cover group-hover:scale-110 transition-all duration-500"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                     data-ai-hint={product.category}
                   />
                 </div>
@@ -212,7 +214,7 @@ export default async function HomePage() {
               <Link href={`/news/${news.id}`} key={news.id} className="group">
                 <Card className="bg-secondary/20 border-white/5 overflow-hidden hover:border-primary/30 transition-all h-full">
                   <div className="relative h-48 overflow-hidden">
-                    <Image src={news.imageUrl} alt={news.title} fill className="object-cover transition-transform group-hover:scale-105" unoptimized />
+                    <Image src={news.imageUrl} alt={news.title} fill className="object-cover transition-transform group-hover:scale-105" unoptimized sizes="(max-width: 768px) 100vw, 33vw" />
                   </div>
                   <CardContent className="p-6">
                     <div className="flex items-center gap-2 text-[10px] text-accent font-bold uppercase mb-2">
@@ -230,7 +232,7 @@ export default async function HomePage() {
           <div className="text-center">
              <Button asChild variant="outline" className="border-primary/20 hover:bg-primary/10">
                <Link href="/news" className="flex items-center gap-2">
-                 <Newspaper className="h-4 w-4" /> Ver Todas as Notícias
+                 < Newspaper className="h-4 w-4" /> Ver Todas as Notícias
                </Link>
              </Button>
           </div>

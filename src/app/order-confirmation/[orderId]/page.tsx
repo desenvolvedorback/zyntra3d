@@ -215,7 +215,7 @@ export default function OrderConfirmationPage() {
                   <ImageIcon className="h-4 w-4" /> Resultado da Impressão
                 </h3>
                 <div className="relative aspect-video rounded-2xl overflow-hidden border border-primary/20 shadow-2xl">
-                  <Image src={order.previewImageUrl} alt="Preview do Pedido" fill className="object-cover" />
+                  <Image src={order.previewImageUrl} alt="Preview do Pedido" fill className="object-cover" sizes="(max-width: 768px) 100vw, 800px" />
                 </div>
               </div>
             )}

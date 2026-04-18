@@ -19,6 +19,7 @@ export function Logo({ className }: { className?: string }) {
         alt="Zyntra 3D Logo"
         width={80}
         height={40}
+        style={{ width: 'auto', height: '40px' }}
         className="object-contain"
         priority
         unoptimized
