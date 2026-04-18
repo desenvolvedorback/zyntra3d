@@ -1,5 +1,4 @@
-
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import { doc, onSnapshot, getDoc } from "firebase/firestore";

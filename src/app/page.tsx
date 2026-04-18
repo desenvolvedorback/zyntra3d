@@ -34,7 +34,7 @@ async function getFeaturedProducts() {
         isDigital: !!data.isDigital,
         digitalLink: data.digitalLink || "",
         createdAt: data.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
-      } as any;
+      };
     });
 
     const promotionsCollection = collection(db, "promotions");
@@ -51,10 +51,10 @@ async function getFeaturedProducts() {
         productId: data.productId || "",
         isActive: !!data.isActive,
         createdAt: data.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
-      } as any;
+      };
     });
     
-    return applyPromotions(products as Product[], promotions as Promotion[]);
+    return applyPromotions(products as any[], promotions as any[]);
   } catch (error) {
     console.error("Erro ao buscar produtos:", error);
     return [];
@@ -74,9 +74,9 @@ async function getLatestNews() {
         content: data.content || "",
         imageUrl: data.imageUrl || "",
         imageHint: data.imageHint || "",
-        createdAt: data.createdAt?.toDate() || new Date(),
-      } as News;
-    });
+        createdAt: data.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
+      };
+    }) as any[];
   } catch (error) {
     return [];
   }
@@ -180,14 +180,9 @@ export default async function HomePage() {
                   <CardTitle className="font-headline text-2xl mt-1 h-16">{product.name}</CardTitle>
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex flex-col">
-                      {product.promotionalPrice ? (
-                        <>
-                          <span className="text-primary font-bold text-xl">R$ {product.promotionalPrice.toFixed(2)}</span>
-                          <span className="text-muted-foreground line-through text-xs">R$ {product.price.toFixed(2)}</span>
-                        </>
-                      ) : (
-                        <span className="text-primary font-bold text-xl">R$ {product.price.toFixed(2)}</span>
-                      )}
+                      <span className="text-primary font-bold text-xl">
+                        R$ {(product.promotionalPrice || product.price).toFixed(2)}
+                      </span>
                     </div>
                     <div className="w-12 h-12">
                        <AddToCartButton product={{
@@ -221,7 +216,7 @@ export default async function HomePage() {
                   <CardContent className="p-6">
                     <div className="flex items-center gap-2 text-[10px] text-accent font-bold uppercase mb-2">
                       <Calendar className="h-3 w-3" />
-                      {format(news.createdAt, "d 'de' MMM", { locale: ptBR })}
+                      {format(new Date(news.createdAt), "d 'de' MMM", { locale: ptBR })}
                     </div>
                     <h3 className="font-headline text-xl mb-3 line-clamp-2 group-hover:text-primary transition-colors">{news.title}</h3>
                     <p className="text-muted-foreground text-sm line-clamp-2 font-alegreya">{news.content}</p>

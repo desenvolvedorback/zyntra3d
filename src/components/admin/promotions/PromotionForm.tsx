@@ -62,23 +62,24 @@ export function PromotionForm({ initialData, products }: PromotionFormProps) {
           ...data,
           updatedAt: serverTimestamp(),
         });
-        toast({ title: "Sucesso", description: "Promoção atualizada." });
+        toast({ title: "Sucesso", description: "Promoção atualizada com sucesso." });
       } else {
         const promosCollection = collection(db, "promotions");
         await addDoc(promosCollection, {
           ...data,
           createdAt: serverTimestamp(),
         });
-        toast({ title: "Sucesso", description: "Promoção criada." });
+        toast({ title: "Sucesso", description: "Promoção criada com sucesso." });
       }
       
       router.push("/admin/promotions");
       router.refresh();
     } catch (error: any) {
+      console.error("Erro ao salvar promoção:", error);
       toast({
         variant: "destructive",
         title: "Erro ao Salvar",
-        description: "Verifique sua conexão e permissões administrativas.",
+        description: error.message || "Verifique sua conexão e permissões administrativas.",
       });
     } finally {
       setLoading(false);

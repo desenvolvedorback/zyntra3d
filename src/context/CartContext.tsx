@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { createContext, useCallback, useEffect, useState, useContext, useMemo, type ReactNode } from "react";
@@ -38,7 +37,7 @@ export const useCart = () => {
   return context;
 };
 
-const LOCAL_STORAGE_KEY = "zyntra_3d_cart_v3";
+const LOCAL_STORAGE_KEY = "zyntra_3d_cart_v4";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -49,10 +48,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [deliveryPromotion, setDeliveryPromotion] = useState<Promotion | null>(null);
   const [productPromotions, setProductPromotions] = useState<Promotion[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+  
   const baseDeliveryFee = 10;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Monitorar Promoções de Entrega
   useEffect(() => {
+    if (!isMounted) return;
     const q = query(
       collection(db, "promotions"), 
       where("isActive", "==", true), 
@@ -60,32 +66,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
-        const promos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Promotion));
+        const promos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
         setDeliveryPromotion(promos[0]);
       } else {
         setDeliveryPromotion(null);
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [isMounted]);
 
   // Monitorar Promoções de Produtos
   useEffect(() => {
+    if (!isMounted) return;
     const q = query(
       collection(db, "promotions"), 
       where("isActive", "==", true), 
       where("type", "==", "product")
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const promos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Promotion));
+      const promos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
       setProductPromotions(promos);
     });
     return () => unsubscribe();
-  }, []);
+  }, [isMounted]);
 
   const getDiscountedPrice = useCallback((item: CartItem) => {
     const promo = productPromotions.find(p => p.productId === item.productId);
-    if (!promo) return item.price; // item.price é o preço base salvo
+    if (!promo) return item.price;
 
     if (promo.discountType === 'percentage') {
       return item.price * (1 - promo.discountValue / 100);
@@ -130,7 +137,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [getLocalCart]);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || !isMounted) return;
 
     if (user) {
       setLoading(true);
@@ -147,7 +154,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCartItems(getLocalCart());
       setLoading(false);
     }
-  }, [user, authLoading, getLocalCart, mergeAndClearLocalCart]);
+  }, [user, authLoading, isMounted, getLocalCart, mergeAndClearLocalCart]);
 
   const addToCart = async (product: any, quantity = 1) => {
     if (product.stock === 0) {
@@ -155,7 +162,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    // Salvamos o preço BASE no carrinho, as promoções são calculadas dinamicamente
     const basePrice = product.price;
 
     const newItem: CartItem = { 
@@ -233,7 +239,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   
-  // Total Price sempre considera as promoções de produto ativas no momento
   const totalPrice = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + (getDiscountedPrice(item) * item.quantity), 0);
   }, [cartItems, getDiscountedPrice]);
