@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import type { Order } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Package, Truck, Zap } from "lucide-react";
+import { MessageCircle, Clock, MapPin, Printer, ImageIcon, Loader2, Download, Package, Truck, Zap } from "lucide-react";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ const STATUS_STEPS = [
 
 export default function OrderConfirmationPage() {
   const params = useParams();
-  const orderId = params.orderId as string;
+  const orderId = params?.orderId as string;
   
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,9 +72,20 @@ export default function OrderConfirmationPage() {
   }
 
   const isPaid = order.status !== 'pending' && order.status !== 'cancelled';
-  // Lógica robusta para detectar itens digitais
-  const digitalItems = order.items.filter(item => item.isDigital || item.digitalLink);
-  const hasPhysicalItems = order.items.some(item => !item.isDigital && !item.title.toLowerCase().includes('pack') && !item.title.toLowerCase().includes('arquivo'));
+  
+  // Detecção robusta de itens digitais (mesmo que o campo isDigital tenha falhado na gravação por algum motivo)
+  const digitalItems = order.items.filter(item => 
+    item.isDigital || 
+    !!item.digitalLink || 
+    item.title.toLowerCase().includes('pack') || 
+    item.title.toLowerCase().includes('arquivo')
+  );
+
+  const hasPhysicalItems = order.items.some(item => 
+    !item.isDigital && 
+    !item.title.toLowerCase().includes('pack') && 
+    !item.title.toLowerCase().includes('arquivo')
+  );
 
   const adminPhone = "5514991023986";
   const message = `Olá Zyntra 3D! Gostaria de falar sobre o meu pedido.\n\n*Nº do Pedido:* ${order.orderNumber}\n*Status:* ${order.status}`;
@@ -94,7 +105,7 @@ export default function OrderConfirmationPage() {
         </CardHeader>
         
         <CardContent className="p-8 space-y-10">
-            {/* Status Visual Timeline para Itens Físicos - OCULTA se for apenas digital */}
+            {/* Status Visual Timeline para Itens Físicos */}
             {hasPhysicalItems && (
               <div className="space-y-6">
                 <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase tracking-widest text-center justify-center">
@@ -102,15 +113,17 @@ export default function OrderConfirmationPage() {
                 </h3>
                 <div className="flex justify-between items-start relative max-w-2xl mx-auto">
                    <div className="absolute top-5 left-0 right-0 h-0.5 bg-white/5 -z-0" />
-                   {STATUS_STEPS.map((step, idx) => {
-                     const statusIndex = ['paid', 'processing', 'printing', 'ready', 'shipped', 'delivered'].indexOf(order.status);
-                     const stepIndex = ['paid', 'processing', 'printing', 'ready', 'shipped'].indexOf(step.id);
-                     const isPast = statusIndex >= stepIndex;
+                   {STATUS_STEPS.map((step) => {
+                     const statusOrder = ['pending', 'paid', 'processing', 'printing', 'ready', 'shipped', 'delivered'];
+                     const currentIdx = statusOrder.indexOf(order.status);
+                     const stepIdx = statusOrder.indexOf(step.id);
+                     const isPast = currentIdx >= stepIdx;
                      
+                     const StepIcon = step.icon;
                      return (
                        <div key={step.id} className="flex flex-col items-center gap-2 relative z-10 w-1/5">
                           <div className={`p-2.5 rounded-full border-2 transition-all ${isPast ? 'bg-primary border-primary text-white' : 'bg-background border-white/10 text-muted-foreground opacity-40'}`}>
-                             <step.icon className="h-4 w-4" />
+                             <StepIcon className="h-4 w-4" />
                           </div>
                           <span className={`text-[10px] font-bold uppercase text-center ${isPast ? 'text-primary' : 'text-muted-foreground'}`}>{step.label}</span>
                        </div>
@@ -120,20 +133,29 @@ export default function OrderConfirmationPage() {
               </div>
             )}
 
-            {/* Downloads para Itens Digitais */}
+            {/* DOWNLOADS - EXIBIÇÃO PRIORITÁRIA SE PAGO */}
             {isPaid && digitalItems.length > 0 && (
-              <div className="p-6 bg-green-500/10 border border-green-500/20 rounded-2xl space-y-4 animate-in zoom-in-95 duration-500">
-                 <h3 className="font-bold text-green-500 flex items-center gap-2 text-sm uppercase tracking-widest">
-                   <Download className="h-4 w-4" /> Arquivos Liberados!
-                 </h3>
-                 <div className="grid gap-3">
+              <div className="p-6 bg-green-500/10 border-2 border-green-500/40 rounded-2xl space-y-6 animate-in zoom-in-95 duration-500">
+                 <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-green-500 flex items-center gap-2 text-sm uppercase tracking-widest">
+                      <Download className="h-5 w-5" /> Arquivos Liberados!
+                    </h3>
+                    <Badge className="bg-green-600">DOWNLOAD IMEDIATO</Badge>
+                 </div>
+                 <div className="grid gap-4">
                     {digitalItems.map((item, idx) => (
-                      <Button key={idx} asChild className="w-full bg-green-600 hover:bg-green-700 h-12 shadow-lg">
-                        <a href={item.digitalLink} target="_blank">Baixar Agora: {item.title}</a>
+                      <Button key={idx} asChild className="w-full bg-green-600 hover:bg-green-700 h-14 shadow-lg text-lg font-bold group">
+                        <a href={item.digitalLink || "#"} target="_blank">
+                          <Download className="mr-2 h-5 w-5 group-hover:animate-bounce" />
+                          Baixar: {item.title}
+                        </a>
                       </Button>
                     ))}
                  </div>
-                 <p className="text-[10px] text-muted-foreground text-center italic">Você também pode acessar seus links na seção "Meus Pedidos" do seu perfil.</p>
+                 <p className="text-[11px] text-muted-foreground text-center italic leading-relaxed">
+                   Os links acima levam ao nosso armazenamento seguro no Google Drive/Cloud. <br/>
+                   Você também pode acessar esses arquivos em "Meus Pedidos" no seu perfil.
+                 </p>
               </div>
             )}
 
@@ -165,7 +187,7 @@ export default function OrderConfirmationPage() {
                 <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase tracking-widest">
                   <ImageIcon className="h-4 w-4" /> Resultado da Impressão
                 </h3>
-                <div className="relative aspect-video rounded-2xl overflow-hidden border border-primary/20">
+                <div className="relative aspect-video rounded-2xl overflow-hidden border border-primary/20 shadow-2xl">
                   <Image src={order.previewImageUrl} alt="Preview do Pedido" fill className="object-cover" />
                 </div>
               </div>
@@ -179,7 +201,7 @@ export default function OrderConfirmationPage() {
                   <div className="bg-white/5 p-4 rounded-xl border border-white/5 h-24 flex flex-col justify-center">
                     <p className="font-medium">{order.delivery ? "Zyntra Logística - Botucatu" : "Retirada na Unidade Técnica"}</p>
                     {order.delivery && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order.location}</p>}
-                    {!order.delivery && !hasPhysicalItems && <p className="text-xs text-muted-foreground mt-1">Acesso Digital Imediato</p>}
+                    {!order.delivery && digitalItems.length > 0 && <p className="text-xs text-muted-foreground mt-1">Acesso Digital Instantâneo</p>}
                   </div>
                </div>
                <div className="space-y-4">
@@ -203,7 +225,7 @@ export default function OrderConfirmationPage() {
                           <TableRow key={index} className="border-white/5">
                               <TableCell className="font-medium">
                                 {item.title} <span className="text-accent">x{item.quantity}</span>
-                                {(item.isDigital || item.digitalLink) && <Badge variant="outline" className="ml-2 text-[8px] h-3 uppercase border-accent text-accent">Digital</Badge>}
+                                {(item.isDigital || !!item.digitalLink) && <Badge variant="outline" className="ml-2 text-[8px] h-3 uppercase border-accent text-accent">Digital</Badge>}
                               </TableCell>
                               <TableCell className="text-right">R$ {(item.unit_price * item.quantity).toFixed(2)}</TableCell>
                           </TableRow>
@@ -240,7 +262,7 @@ export default function OrderConfirmationPage() {
                 <Link href="/products">Continuar na Oficina</Link>
             </Button>
             <Button asChild variant="outline" className="border-primary/20">
-                <Link href="/my-orders">Ver Meus Pedidos</Link>
+                <Link href="/my-orders">Ir para Meus Pedidos</Link>
             </Button>
         </CardFooter>
       </Card>

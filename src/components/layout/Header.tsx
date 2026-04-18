@@ -8,7 +8,7 @@ import { CartSheet } from "@/components/cart/CartSheet";
 import { useAuth } from "@/context/AuthContext";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Printer, Package, Info, Home, Newspaper } from "lucide-react";
+import { Menu, X, Package, Info, Home, Newspaper } from "lucide-react";
 
 export function Header() {
   const { isAdmin } = useAuth();
