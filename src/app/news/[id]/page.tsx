@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from "react";
@@ -7,6 +6,7 @@ import { db } from "@/lib/firebase";
 import type { News } from "@/lib/types";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Loader2, Calendar, ArrowLeft, Share2 } from "lucide-react";
 import { format } from "date-fns";
@@ -30,7 +30,10 @@ export default function NewsDetailPage() {
           const data = docSnap.data();
           setArticle({
             id: docSnap.id,
-            ...data,
+            title: data.title || "",
+            content: data.content || "",
+            imageUrl: data.imageUrl || "",
+            imageHint: data.imageHint || "",
             createdAt: data.createdAt?.toDate() || new Date(),
           } as News);
         }
