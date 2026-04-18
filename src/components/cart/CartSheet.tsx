@@ -73,7 +73,7 @@ export function CartSheet() {
   const finalPrice = delivery ? totalPrice + finalDeliveryFee : totalPrice;
 
   const needsFileLink = cartItems.some(item => 
-    item.category === 'Arquivos 3D' || item.category === 'Personalizados'
+    item.category === 'Personalizados' || item.category === 'Logotipos'
   );
 
   const getNextOrderNumber = async (): Promise<number> => {
@@ -125,6 +125,7 @@ export function CartSheet() {
             title: item.name,
             quantity: item.quantity,
             unit_price: item.price,
+            isDigital: !!item.isDigital, // Salva o tipo explicitamente no pedido
             digitalLink: item.digitalLink || "",
           })),
           customer: {
@@ -211,7 +212,7 @@ export function CartSheet() {
                       onChange={(e) => setFileLink(e.target.value)}
                       className="bg-black/40"
                     />
-                    <p className="text-[10px] text-muted-foreground">Necessário para projetos personalizados ou impressões diretas.</p>
+                    <p className="text-[10px] text-muted-foreground">Necessário para projetos personalizados ou logotipos.</p>
                   </div>
                 )}
 

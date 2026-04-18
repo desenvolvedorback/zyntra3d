@@ -72,8 +72,8 @@ export default function OrderConfirmationPage() {
   }
 
   const isPaid = order.status !== 'pending' && order.status !== 'cancelled';
-  const digitalItems = order.items.filter(item => item.digitalLink);
-  const hasPhysicalItems = order.items.some(item => !item.digitalLink);
+  const digitalItems = order.items.filter(item => item.isDigital);
+  const hasPhysicalItems = order.items.some(item => !item.isDigital);
 
   const adminPhone = "5514991023986";
   const message = `Olá Zyntra 3D! Gostaria de falar sobre o meu pedido.\n\n*Nº do Pedido:* ${order.orderNumber}\n*Status:* ${order.status}`;
@@ -160,7 +160,7 @@ export default function OrderConfirmationPage() {
                 <h3 className="font-bold text-primary flex items-center gap-2 text-xs uppercase tracking-widest">
                   <ImageIcon className="h-4 w-4" /> Resultado da Impressão
                 </h3>
-                <div className="relative aspect-video rounded-2xl overflow-hidden border border-primary/20 shadow-neon">
+                <div className="relative aspect-video rounded-2xl overflow-hidden border border-primary/20">
                   <Image src={order.previewImageUrl} alt="Preview do Pedido" fill className="object-cover" />
                 </div>
               </div>
@@ -195,7 +195,10 @@ export default function OrderConfirmationPage() {
                   <TableBody>
                       {order.items.map((item, index) => (
                           <TableRow key={index} className="border-white/5">
-                              <TableCell className="font-medium">{item.title} <span className="text-accent">x{item.quantity}</span></TableCell>
+                              <TableCell className="font-medium">
+                                {item.title} <span className="text-accent">x{item.quantity}</span>
+                                {item.isDigital && <Badge variant="outline" className="ml-2 text-[8px] h-3 uppercase border-accent text-accent">Digital</Badge>}
+                              </TableCell>
                               <TableCell className="text-right">R$ {(item.unit_price * item.quantity).toFixed(2)}</TableCell>
                           </TableRow>
                       ))}

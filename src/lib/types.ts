@@ -8,10 +8,11 @@ export interface Product {
   imageHint: string;
   stock: number;
   category: 'Modelos Prontos' | 'Personalizados' | 'Logotipos' | 'Arquivos 3D' | 'Pack 3D';
+  isDigital: boolean; // Novo campo
   createdAt: Date;
   promotion?: Promotion;
   promotionalPrice?: number;
-  digitalLink?: string; // Link para download se for produto digital
+  digitalLink?: string; 
 }
 
 export interface News {
@@ -30,6 +31,7 @@ export interface CartItem {
   price: number;
   imageUrl: string;
   category?: string;
+  isDigital: boolean; // Novo campo
   digitalLink?: string;
 }
 
@@ -53,6 +55,7 @@ export interface Order {
     title: string;
     quantity: number;
     unit_price: number;
+    isDigital: boolean; // Novo campo
     digitalLink?: string;
   }[];
   total: number;

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,7 +6,7 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, Sparkles, Link as LinkIcon } from "lucide-react";
+import { Loader2, Sparkles, Link as LinkIcon, FileCode, Box as BoxIcon } from "lucide-react";
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@/lib/types";
 import { productSchema } from "@/lib/product-schema";
@@ -37,16 +39,22 @@ export function ProductForm({ initialData }: ProductFormProps) {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: initialData ? {
-      ...initialData,
+      name: initialData.name,
+      description: initialData.description,
       price: initialData.price,
       stock: initialData.stock,
+      category: initialData.category,
+      isDigital: initialData.isDigital || false,
+      imageUrl: initialData.imageUrl,
+      imageHint: initialData.imageHint,
       digitalLink: initialData.digitalLink || "",
     } : {
       name: "",
       description: "",
       price: 0,
-      stock: 0,
+      stock: 99,
       category: "Modelos Prontos",
+      isDigital: false,
       imageUrl: "",
       imageHint: "",
       digitalLink: "",
@@ -168,26 +176,54 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 />
               </CardContent>
             </Card>
+
             <Card className="bg-secondary/20 border-white/5">
               <CardHeader>
-                <CardTitle>Recursos Digitais</CardTitle>
-                <CardDescription>Links para download ou arquivos originais.</CardDescription>
+                <CardTitle>Tipo de Produto e Entrega</CardTitle>
+                <CardDescription>Configure como o cliente receberá este item.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="digitalLink"
+                  name="isDigital"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2"><LinkIcon className="h-4 w-4" /> Link do Arquivo (ZIP/STL/OBJ)</FormLabel>
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border border-white/10 p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2">
+                          {field.value ? <FileCode className="h-5 w-5 text-accent" /> : <BoxIcon className="h-5 w-5 text-primary" />}
+                          {field.value ? "Produto Digital (Download)" : "Produto Físico (Impressão)"}
+                        </FormLabel>
+                        <FormDescription>
+                          Produtos digitais liberam o link do Drive automaticamente após o pagamento.
+                        </FormDescription>
+                      </div>
                       <FormControl>
-                        <Input placeholder="https://drive.google.com/..." {...field} disabled={loading} className="bg-background/50" />
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
                       </FormControl>
-                      <FormDescription>Se preenchido, o link será liberado automaticamente após o pagamento.</FormDescription>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {form.watch("isDigital") && (
+                  <FormField
+                    control={form.control}
+                    name="digitalLink"
+                    render={({ field }) => (
+                      <FormItem className="animate-in fade-in slide-in-from-top-2">
+                        <FormLabel className="flex items-center gap-2"><LinkIcon className="h-4 w-4" /> Link do Arquivo (ZIP/STL/OBJ)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://drive.google.com/..." {...field} disabled={loading} className="bg-background/50" />
+                        </FormControl>
+                        <FormDescription>O link do Google Drive para o cliente baixar o pack ou arquivo.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                
                 <FormField
                   control={form.control}
                   name="imageUrl"
@@ -204,6 +240,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
               </CardContent>
             </Card>
           </div>
+
           <div className="space-y-8">
             <Card className="bg-secondary/20 border-white/5">
               <CardHeader>
@@ -228,10 +265,11 @@ export function ProductForm({ initialData }: ProductFormProps) {
                   name="stock"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Unidades Disponíveis</FormLabel>
+                      <FormLabel>Estoque Disponível</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} disabled={loading} className="bg-background/50" />
+                        <Input type="number" placeholder="99" {...field} disabled={loading} className="bg-background/50" />
                       </FormControl>
+                      <FormDescription>Para digitais, use um número alto (ex: 9999).</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

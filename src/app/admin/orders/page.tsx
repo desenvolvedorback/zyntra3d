@@ -15,7 +15,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Clock, MapPin, Phone, MessageSquare, Truck, Package, Printer, CheckCircle2, Link as LinkIcon, Loader2, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { Clock, MapPin, Phone, MessageSquare, Truck, Package, Printer, CheckCircle2, Link as LinkIcon, Loader2, AlertCircle, Image as ImageIcon, FileCode, HardDrive } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -88,6 +88,9 @@ export default function OrdersPage() {
           <Accordion type="single" collapsible className="w-full">
             {orders.map((order) => {
               const StatusIcon = STATUS_CONFIG[order.status]?.icon || Clock;
+              const hasDigital = order.items.some(i => i.isDigital);
+              const hasPhysical = order.items.some(i => !i.isDigital);
+
               return (
                 <AccordionItem value={order.id!} key={order.id} className="border-white/5">
                   <AccordionTrigger className="px-4 text-sm hover:no-underline hover:bg-white/5">
@@ -125,26 +128,30 @@ export default function OrdersPage() {
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] uppercase font-bold text-muted-foreground">URL de Rastreio / Envio</label>
-                            <Input 
-                              placeholder="Link do frete..." 
-                              defaultValue={order.trackingLink} 
-                              onBlur={(e) => handleUpdateOrder(order.id!, { trackingLink: e.target.value })}
-                              className="bg-background/50 border-white/10"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
-                              <ImageIcon className="h-3 w-3" /> Foto da Peça Pronta (URL)
-                            </label>
-                            <Input 
-                              placeholder="Link da foto no Imgur/Drive..." 
-                              defaultValue={order.previewImageUrl} 
-                              onBlur={(e) => handleUpdateOrder(order.id!, { previewImageUrl: e.target.value })}
-                              className="bg-background/50 border-white/10"
-                            />
-                          </div>
+                          {hasPhysical && (
+                            <>
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] uppercase font-bold text-muted-foreground">URL de Rastreio / Envio</label>
+                                <Input 
+                                  placeholder="Link do frete..." 
+                                  defaultValue={order.trackingLink} 
+                                  onBlur={(e) => handleUpdateOrder(order.id!, { trackingLink: e.target.value })}
+                                  className="bg-background/50 border-white/10"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                                  <ImageIcon className="h-3 w-3" /> Foto da Peça Pronta (URL)
+                                </label>
+                                <Input 
+                                  placeholder="Link da foto..." 
+                                  defaultValue={order.previewImageUrl} 
+                                  onBlur={(e) => handleUpdateOrder(order.id!, { previewImageUrl: e.target.value })}
+                                  className="bg-background/50 border-white/10"
+                                />
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -165,7 +172,7 @@ export default function OrdersPage() {
                           {order.fileLink && (
                             <div className="mt-4 p-4 rounded-xl bg-primary/10 border border-primary/20">
                               <p className="text-[10px] font-bold text-primary mb-2 uppercase flex items-center gap-1">
-                                <LinkIcon className="h-3 w-3" /> Arquivo Original do Cliente:
+                                <LinkIcon className="h-3 w-3" /> Arquivo do Cliente:
                               </p>
                               <a href={order.fileLink} target="_blank" className="text-accent underline break-all text-xs font-mono">{order.fileLink}</a>
                             </div>
@@ -180,9 +187,21 @@ export default function OrdersPage() {
                         </h4>
                         <div className="space-y-2">
                           {order.items.map((item, i) => (
-                            <div key={i} className="flex justify-between text-sm bg-white/5 p-3 rounded-lg border border-white/5">
-                              <span className="font-medium">{item.title} <span className="text-accent font-bold">x{item.quantity}</span></span>
-                              <span className="text-muted-foreground">R$ {item.unit_price.toFixed(2)}</span>
+                            <div key={i} className="flex flex-col gap-1 bg-white/5 p-3 rounded-lg border border-white/5">
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="font-medium">{item.title} <span className="text-accent font-bold">x{item.quantity}</span></span>
+                                {item.isDigital ? (
+                                  <Badge variant="outline" className="text-[9px] uppercase border-accent text-accent h-4">Digital</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-[9px] uppercase border-primary text-primary h-4">Físico</Badge>
+                                )}
+                              </div>
+                              {item.digitalLink && (
+                                <div className="mt-1 text-[10px] flex items-center gap-1 text-muted-foreground">
+                                  <HardDrive className="h-3 w-3" />
+                                  <span className="truncate">{item.digitalLink}</span>
+                                </div>
+                              )}
                             </div>
                           ))}
                           {order.observation && (

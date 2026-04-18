@@ -1,10 +1,11 @@
+
 "use client";
 
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/context/CartContext";
 import type { CartItem as CartItemType } from "@/lib/types";
 
 interface CartItemProps {
@@ -39,7 +40,7 @@ export function CartItem({ item }: CartItemProps) {
             min="1"
             value={item.quantity}
             onChange={handleQuantityChange}
-            className="h-8 w-16"
+            className="h-8 w-16 bg-background/50"
           />
         </div>
       </div>

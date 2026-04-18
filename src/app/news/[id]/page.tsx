@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -47,7 +48,7 @@ export default function NewsDetailPage() {
   }, [id]);
 
   const handleShare = () => {
-    if (navigator.share) {
+    if (typeof navigator !== 'undefined' && navigator.share) {
       navigator.share({
         title: article?.title,
         url: window.location.href,
@@ -98,6 +99,7 @@ export default function NewsDetailPage() {
           fill
           className="object-cover"
           priority
+          unoptimized
         />
       </div>
 

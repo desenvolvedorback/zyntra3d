@@ -32,6 +32,7 @@ async function getFeaturedProducts() {
         imageHint: data.imageHint || "",
         stock: Number(data.stock) || 0,
         category: data.category || "Modelos Prontos",
+        isDigital: !!data.isDigital,
         digitalLink: data.digitalLink || "",
         createdAt: data.createdAt?.toDate()?.toISOString() || new Date().toISOString(),
       };
@@ -188,7 +189,7 @@ export default async function HomePage() {
                       )}
                     </div>
                     <div className="w-12 h-12">
-                       <AddToCartButton product={product} />
+                       <AddToCartButton product={product as any} />
                     </div>
                   </div>
                 </CardContent>
@@ -211,7 +212,7 @@ export default async function HomePage() {
               <Link href={`/news/${news.id}`} key={news.id} className="group">
                 <Card className="bg-secondary/20 border-white/5 overflow-hidden hover:border-primary/30 transition-all h-full">
                   <div className="relative h-48 overflow-hidden">
-                    <Image src={news.imageUrl} alt={news.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                    <Image src={news.imageUrl} alt={news.title} fill className="object-cover transition-transform group-hover:scale-105" unoptimized />
                   </div>
                   <CardContent className="p-6">
                     <div className="flex items-center gap-2 text-[10px] text-accent font-bold uppercase mb-2">

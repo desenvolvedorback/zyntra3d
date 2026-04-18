@@ -58,10 +58,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setLocalCart = useCallback((cartItems: CartItem[]) => {
+  const setLocalCart = useCallback((items: CartItem[]) => {
     if (typeof window === 'undefined') return;
     try {
-      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cartItems));
+      window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
     } catch (error) {}
   }, []);
 
@@ -156,6 +156,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       imageUrl: product.imageUrl,
       quantity,
       category: product.category,
+      isDigital: !!product.isDigital,
       digitalLink: product.digitalLink || ""
     };
 

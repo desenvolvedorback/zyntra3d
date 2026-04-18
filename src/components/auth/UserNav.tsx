@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { LayoutDashboard, LogOut, User as UserIcon, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 

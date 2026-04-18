@@ -109,19 +109,18 @@ export default function MyOrdersPage() {
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">
                     <div className="lg:col-span-2 flex flex-col gap-4">
                       {order.items.map((item, idx) => {
-                        const isDigital = !!item.digitalLink;
                         return (
                           <div key={idx} className="flex items-center gap-4 bg-white/5 p-3 rounded-lg border border-white/5">
                             <div className="h-12 w-12 rounded bg-primary/20 flex items-center justify-center shrink-0">
-                              {isDigital ? <FileCode className="h-6 w-6 text-accent" /> : <Printer className="h-6 w-6 text-primary" />}
+                              {item.isDigital ? <FileCode className="h-6 w-6 text-accent" /> : <Printer className="h-6 w-6 text-primary" />}
                             </div>
                             <div className="flex-grow min-w-0">
                               <p className="font-bold text-sm truncate">{item.title}</p>
                               <p className="text-[10px] uppercase font-bold text-muted-foreground">
-                                {isDigital ? "📦 Arquivo Digital" : "🛠️ Impressão Física"}
+                                {item.isDigital ? "📦 Arquivo Digital" : "🛠️ Impressão Física"}
                               </p>
                             </div>
-                            {isPaid && isDigital && (
+                            {isPaid && item.isDigital && item.digitalLink && (
                               <Button asChild size="sm" variant="ghost" className="text-accent hover:bg-accent/10">
                                 <a href={item.digitalLink} target="_blank"><Download className="h-4 w-4" /></a>
                               </Button>
@@ -153,7 +152,7 @@ export default function MyOrdersPage() {
                     </div>
                   </div>
 
-                  {order.status === 'paid' && !order.items.some(i => i.digitalLink) && (
+                  {order.status === 'paid' && !order.items.some(i => i.isDigital) && (
                     <div className="mt-6 p-4 bg-accent/5 rounded-xl border border-accent/20 flex items-center gap-3">
                       <div className="p-2 rounded-full bg-accent/10">
                         <AlertCircle className="h-4 w-4 text-accent" />

@@ -7,6 +7,7 @@ export const productSchema = z.object({
   price: z.coerce.number().min(0.01, "O preço deve ser um número positivo"),
   stock: z.coerce.number().int().min(0, "O estoque deve ser um número inteiro não negativo"),
   category: z.string().min(3, "A categoria é obrigatória"),
+  isDigital: z.boolean().default(false), // Novo campo
   imageUrl: z.string().url("Deve ser uma URL válida").or(z.literal("")).optional(),
   imageHint: z.string().optional(),
   digitalLink: z.string().url("Deve ser uma URL válida (Drive/Cloud)").or(z.literal("")).optional(),
