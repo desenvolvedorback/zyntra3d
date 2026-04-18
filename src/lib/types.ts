@@ -30,6 +30,7 @@ export interface CartItem {
   price: number;
   imageUrl: string;
   category?: string;
+  digitalLink?: string;
 }
 
 export interface UserProfile {
@@ -52,6 +53,7 @@ export interface Order {
     title: string;
     quantity: number;
     unit_price: number;
+    digitalLink?: string;
   }[];
   total: number;
   delivery: boolean;

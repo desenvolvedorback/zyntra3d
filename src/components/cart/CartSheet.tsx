@@ -17,13 +17,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { CreditCard, Loader2, ShoppingCart, Trash2, Link as LinkIcon, Truck, Box } from "lucide-react";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/context/CartContext";
 import { CartItem } from "./CartItem";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useState, useEffect, useContext, useTransition, useMemo } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { AuthContext } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { mercadoPagoCheckout } from "@/lib/actions/mercadoPagoCheckout";
 import { db } from "@/lib/firebase";
@@ -53,9 +53,7 @@ export function CartSheet() {
   const [observation, setObservation] = useState("");
   const [contactPhone, setContactPhone] = useState("");
 
-  const authContext = useContext(AuthContext);
-  if (!authContext) throw new Error("AuthProvider não encontrado");
-  const { user, userProfile, loading: authLoading } = authContext;
+  const { user, userProfile, loading: authLoading } = useAuth();
 
   useEffect(() => setIsClient(true), []);
 
@@ -114,7 +112,6 @@ export function CartSheet() {
     
     startTransition(async () => {
       try {
-        // 1. Gerar número do pedido e criar documento no Firestore (Lado do Cliente com Auth)
         const orderNumber = await getNextOrderNumber();
         const orderRef = doc(collection(db, "orders"));
         const isDelivery = (finalDeliveryFee || 0) > 0 && !!location;
@@ -128,6 +125,7 @@ export function CartSheet() {
             title: item.name,
             quantity: item.quantity,
             unit_price: item.price,
+            digitalLink: item.digitalLink || "",
           })),
           customer: {
             id: userProfile.uid,
@@ -137,7 +135,8 @@ export function CartSheet() {
           delivery: isDelivery,
           deliveryFee: isDelivery ? (finalDeliveryFee || 0) : 0,
           location: isDelivery ? (location || '') : '',
-          observation: `${observation}${fileLink ? ` | LINK: ${fileLink}` : ''}`,
+          observation: observation,
+          fileLink: fileLink,
           contactPhone: contactPhone || userProfile.phone || '',
           createdAt: serverTimestamp(),
           paymentId: null,
@@ -145,7 +144,6 @@ export function CartSheet() {
 
         await setDoc(orderRef, orderPayload);
 
-        // 2. Chamar a Server Action apenas para o Mercado Pago
         const checkoutUrl = await mercadoPagoCheckout({
           items: cartItems.map(item => ({
             id: item.productId,
@@ -177,7 +175,7 @@ export function CartSheet() {
         <Button variant="ghost" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
           {cartCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs text-white">
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white text-[10px] font-bold">
               {cartCount}
             </span>
           )}

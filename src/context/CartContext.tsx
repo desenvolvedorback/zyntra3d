@@ -1,13 +1,12 @@
 
 "use client";
 
+import React, { createContext, useCallback, useEffect, useState, useContext, type ReactNode } from "react";
 import type { Product, CartItem, Promotion } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch, query, where, orderBy } from "firebase/firestore";
-import { createContext, useCallback, useEffect, useState, useContext, type ReactNode } from "react";
+import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch, query, where } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { applyPromotions } from "@/lib/promotions";
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -37,7 +36,7 @@ export const useCart = () => {
   return context;
 };
 
-const LOCAL_STORAGE_KEY = "zyntra_3d_cart";
+const LOCAL_STORAGE_KEY = "zyntra_3d_cart_v2";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -100,12 +99,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const promoCollectionRef = collection(db, "promotions");
-    const unsubscribe = onSnapshot(promoCollectionRef, () => {
-        fetchDeliveryPromo();
-    });
-
-    return () => unsubscribe();
+    fetchDeliveryPromo();
   }, []);
 
   const mergeAndClearLocalCart = useCallback(async (userId: string) => {
@@ -137,7 +131,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const cloudItems = snapshot.docs.map(d => d.data() as CartItem);
           setCartItems(cloudItems);
           setLoading(false);
-        });
+        }, () => setLoading(false));
         return () => unsubscribe();
       });
     } else {
@@ -155,20 +149,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     
     const finalPrice = product.promotionalPrice ?? product.price;
 
+    const newItem: CartItem = { 
+      productId: product.id,
+      name: product.name,
+      price: finalPrice,
+      imageUrl: product.imageUrl,
+      quantity,
+      category: product.category,
+      digitalLink: product.digitalLink || ""
+    };
+
     if (user) {
       const itemRef = doc(db, "carts", user.uid, "items", product.id);
       const docSnap = await getDoc(itemRef);
       const existingQuantity = docSnap.exists() ? (docSnap.data() as CartItem).quantity : 0;
-      const newQuantity = existingQuantity + quantity;
-
-      await setDoc(itemRef, { 
-        productId: product.id,
-        name: product.name,
-        price: finalPrice,
-        imageUrl: product.imageUrl,
-        quantity: newQuantity 
-      }, { merge: true });
-
+      newItem.quantity = existingQuantity + quantity;
+      await setDoc(itemRef, newItem, { merge: true });
     } else {
       const currentItems = getLocalCart();
       const existingItem = currentItems.find(item => item.productId === product.id);
@@ -177,7 +173,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (existingItem) {
         newCart = currentItems.map(item => item.productId === product.id ? {...item, quantity: item.quantity + quantity} : item);
       } else {
-        newCart = [...currentItems, { productId: product.id, name: product.name, price: finalPrice, imageUrl: product.imageUrl, quantity }];
+        newCart = [...currentItems, newItem];
       }
       setLocalCart(newCart);
       setCartItems(newCart);
